@@ -1,0 +1,26 @@
+# Secrets
+.env
+
+# AdGuard runtime/state (do not version)
+apps/adguardhome/data/work/
+apps/adguardhome/data/conf/
+
+# General runtime data you never want in git
+**/data/
+**/work/
+**/conf/
+**/*.db
+**/*.json
+**/*.log
+
+
+
+# Caches
+model-cache/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+

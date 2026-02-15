@@ -1,0 +1,53 @@
+services:
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea
+    restart: unless-stopped
+
+    environment:
+      # Run as your WSL user (adjust if your uid/gid differ)
+      - USER_UID=1000
+      - USER_GID=1000
+
+      # Gitea app config
+      - GITEA__server__DOMAIN=gitea.lan.timscloud.net
+      - GITEA__server__ROOT_URL=http://gitea.lan.timscloud.net/
+      - GITEA__server__HTTP_PORT=3000
+
+      # Disable SSH for now (HTTP(S) Git only)
+      - GITEA__server__START_SSH_SERVER=false
+
+      # Optional: reduce "public signup" risk (you can also do this in UI later)
+      # - GITEA__service__DISABLE_REGISTRATION=true
+
+    volumes:
+      - gitea_data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+
+    networks:
+      - proxy
+
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+
+      # Router
+      - traefik.http.routers.gitea.rule=Host(`gitea.lan.timscloud.net`)
+      - traefik.http.routers.gitea.entrypoints=web
+      - traefik.http.routers.gitea.service=gitea
+
+      # Service -> container port
+      - traefik.http.services.gitea.loadbalancer.server.port=3000
+
+      # Recommended hardening (since WAN :80 is forwarded):
+      # Uncomment once you have these middlewares in file provider.
+      #- traefik.http.routers.gitea.middlewares=lan-allowlist@file,auth-basic@file
+
+volumes:
+  gitea_data:
+
+networks:
+  proxy:
+    external: true
+

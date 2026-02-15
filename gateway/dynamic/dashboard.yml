@@ -1,0 +1,21 @@
+http:
+  middlewares:
+    dash-allowlist:
+      ipAllowList:
+        sourceRange:
+          
+          #- "192.168.188.0/24"
+          #- "192.168.65.0/24"   # Docker Desktop/WSL2 NAT (common)
+          #- "172.28.0.0/16"     # WSL2 (very common)
+          #- "172.16.0.0/12"     # broader Docker/WSL private ranges (fallback)
+
+          - "192.168.188.0/24"   # your LAN
+          - "172.16.0.0/12"      # Docker/WSL private ranges
+          - "192.168.0.0/16"     # Docker Desktop NAT (e.g. 192.168.65.0/24)
+
+    dash-auth:
+      basicAuth:
+        users:
+          # Replace this line with your real htpasswd bcrypt output
+          - "admin:$2y$05$FQV8UPBUgSgtLccNk/WDweMAyt41.mQ03I4PhaiWP6G79cWySSGmO"
+

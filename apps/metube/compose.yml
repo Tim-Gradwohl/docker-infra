@@ -1,0 +1,37 @@
+services:
+  metube:
+    image: ghcr.io/alexta69/metube:latest
+    container_name: metube
+    restart: unless-stopped
+
+    # Persistent downloads + app state (queue persistence etc.)
+    volumes:
+      #- ./downloads:/downloads
+      - /mnt/d/Docker/metube/downloads:/downloads
+
+    environment:
+      - TZ=Europe/Berlin
+      # Optional tuning (defaults are fine, but these are useful):
+      # - DOWNLOAD_DIR=/downloads
+      # - STATE_DIR=/downloads/.metube
+
+    networks:
+      - proxy
+
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+
+      - traefik.http.routers.metube.rule=Host(`metube.lan.timscloud.net`)
+      - traefik.http.routers.metube.entrypoints=web
+      - traefik.http.routers.metube.service=metube
+      - traefik.http.services.metube.loadbalancer.server.port=8081
+
+      # OPTIONAL (recommended): restrict UI to LAN like your Traefik dashboard
+      # If you already have an ipAllowList middleware in file-provider, reuse it here:
+      # - traefik.http.routers.metube.middlewares=lan-allowlist@file
+
+networks:
+  proxy:
+    external: true
+

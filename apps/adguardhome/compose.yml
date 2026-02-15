@@ -1,0 +1,38 @@
+services:
+  adguardhome:
+    image: adguard/adguardhome:latest
+    container_name: adguardhome
+    restart: unless-stopped
+
+    # DNS must be exposed (Traefik cannot proxy DNS)
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+
+    volumes:
+      - ./data/work:/opt/adguardhome/work
+      - ./data/conf:/opt/adguardhome/conf
+
+    networks:
+      - proxy
+
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+
+      # Router: ONLY local hostname (no public myfritz host here)
+      - traefik.http.routers.adguard.rule=Host(`adguard.lan.timscloud.net`)
+      - traefik.http.routers.adguard.entrypoints=web
+  
+      # LAN-only protection (CHANGE THIS SUBNET if yours differs)
+      #- "traefik.http.middlewares.adguard-lanonly.ipallowlist.sourcerange=192.168.178.0/24,10.0.0.0/8,172.16.0.0/12"
+      - "traefik.http.middlewares.adguard-lanonly.ipallowlist.sourcerange=192.168.188.0/24,10.0.0.0/8,172.16.0.0/12"
+      - "traefik.http.routers.adguard.middlewares=adguard-lanonly@docker"
+
+      # First-run wizard runs on 3000
+      - traefik.http.services.adguard.loadbalancer.server.port=80
+
+networks:
+  proxy:
+    external: true
+
