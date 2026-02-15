@@ -13,7 +13,12 @@ apps/adguardhome/data/conf/
 **/*.json
 **/*.log
 
+# MeTube runtime state (do not version)
+apps/metube/downloads/
+apps/metube/downloads/**
 
+# Optional: if you want to version only an empty downloads dir, keep this commented:
+# !apps/metube/downloads/.gitkeep
 
 # Caches
 model-cache/
