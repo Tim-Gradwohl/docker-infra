@@ -38,7 +38,7 @@ services:
       - traefik.docker.network=proxy
 
       # Internal access (LAN)
-      - traefik.http.routers.photos-lan.rule=Host(`adguard.${LAN_DOMAIN}`)
+      - traefik.http.routers.photos-lan.rule=Host(`photos.${LAN_DOMAIN}`)
       - traefik.http.routers.photos-lan.entrypoints=web
       - traefik.http.routers.photos-lan.service=immich
       # optional but recommended:
