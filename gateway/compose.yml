@@ -22,9 +22,11 @@ services:
       # removed 8080:8080 (dashboard will be routed + protected)
 
     volumes:
+      #   - /var/run/docker.sock:/var/run/docker.sock:ro
+      #- ./dynamic:/etc/traefik/dynamic:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./dynamic:/etc/traefik/dynamic:ro
-
+      - /home/tim/stacks/gateway/dynamic:/etc/traefik/dynamic:ro
+  
     networks:
       - proxy
 
