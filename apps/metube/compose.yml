@@ -22,7 +22,7 @@ services:
       - traefik.enable=true
       - traefik.docker.network=proxy
 
-      - traefik.http.routers.metube.rule=Host(`metube.lan.timscloud.net`)
+      - traefik.http.routers.metube.rule=Host(`metube.${LAN_DOMAIN}`)
       - traefik.http.routers.metube.entrypoints=web
       - traefik.http.routers.metube.service=metube
       - traefik.http.services.metube.loadbalancer.server.port=8081

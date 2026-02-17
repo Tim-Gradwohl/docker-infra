@@ -8,9 +8,14 @@ services:
       #- .env
     environment:
       - TZ=${TZ:-Europe/Berlin}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_DATABASE_NAME=${DB_DATABASE_NAME}
+        #- DB_PASSWORD=${DB_PASSWORD}
+        #- DB_USERNAME=${DB_USERNAME}
+        #- DB_DATABASE_NAME=${DB_DATABASE_NAME}
+
+      - DB_PASSWORD=${DB_PASSWORD:?set in shared/.env.secrets}
+      - DB_USERNAME=${DB_USERNAME:?set in shared/.env.secrets}
+      - DB_DATABASE_NAME=${DB_DATABASE_NAME:?set in shared/.env.secrets}
+
     depends_on:
       - redis
       - database
@@ -33,7 +38,7 @@ services:
       - traefik.docker.network=proxy
 
       # Internal access (LAN)
-      - traefik.http.routers.photos-lan.rule=Host(`photos.lan.timscloud.net`)
+      - traefik.http.routers.photos-lan.rule=Host(`adguard.${LAN_DOMAIN}`)
       - traefik.http.routers.photos-lan.entrypoints=web
       - traefik.http.routers.photos-lan.service=immich
       # optional but recommended:

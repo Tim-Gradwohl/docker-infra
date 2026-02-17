@@ -22,7 +22,7 @@ services:
       - traefik.docker.network=proxy
 
       # Router: ONLY local hostname (no public myfritz host here)
-      - traefik.http.routers.adguard.rule=Host(`adguard.lan.timscloud.net`)
+      - traefik.http.routers.adguard.rule=Host(`adguard.${LAN_DOMAIN}`)
       - traefik.http.routers.adguard.entrypoints=web
   
       # LAN-only protection (CHANGE THIS SUBNET if yours differs)

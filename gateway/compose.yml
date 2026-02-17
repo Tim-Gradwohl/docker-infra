@@ -34,7 +34,8 @@ services:
       - traefik.enable=true
       - traefik.docker.network=proxy
 
-      - traefik.http.routers.traefik.rule=Host(`traefik.lan.timscloud.net`)
+        #- traefik.http.routers.traefik.rule=Host(`traefik.${LAN_DOMAIN}`)
+      - traefik.http.routers.traefik.rule=Host(`traefik.${LAN_DOMAIN}`)
       - traefik.http.routers.traefik.entrypoints=web
       - traefik.http.routers.traefik.service=api@internal
       - traefik.http.routers.traefik.middlewares=dash-allowlist@file,dash-auth@file

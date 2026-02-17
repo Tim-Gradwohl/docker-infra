@@ -10,8 +10,8 @@ services:
       - USER_GID=1000
 
       # Gitea app config
-      - GITEA__server__DOMAIN=gitea.lan.timscloud.net
-      - GITEA__server__ROOT_URL=http://gitea.lan.timscloud.net/
+      - GITEA__server__DOMAIN=gitea.${LAN_DOMAIN}
+      - GITEA__server__ROOT_URL=http://gitea.${LAN_DOMAIN}/
       - GITEA__server__HTTP_PORT=3000
 
       # Disable SSH for now (HTTP(S) Git only)
@@ -33,7 +33,7 @@ services:
       - traefik.docker.network=proxy
 
       # Router
-      - traefik.http.routers.gitea.rule=Host(`gitea.lan.timscloud.net`)
+      - traefik.http.routers.gitea.rule=Host(`gitea.${LAN_DOMAIN}`)
       - traefik.http.routers.gitea.entrypoints=web
       - traefik.http.routers.gitea.service=gitea
 
