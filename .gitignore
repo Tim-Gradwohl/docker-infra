@@ -1,5 +1,6 @@
 # Secrets
 .env
+shared/.env.secrets
 
 # AdGuard runtime/state (do not version)
 apps/adguardhome/data/work/
