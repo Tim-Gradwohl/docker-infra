@@ -1,25 +1,21 @@
 name: iptvnator
-
 services:
   iptvnator:
     image: 4gray/iptvnator:latest
     container_name: iptvnator
     restart: unless-stopped
 
-    # IPTVnator web UI is served on port 80 in the container
+    env_file:
+      - ../../shared/.env.global
+
     networks:
       - proxy
-
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-
-      #lan
-      - traefik.http.routers.iptvnator.rule=Host(`iptv.lan.timscloud.net`)
+      # LAN-only host routing using global variable
+      - traefik.http.routers.iptvnator.rule=Host(`iptv.${LAN_DOMAIN}`)
       - traefik.http.routers.iptvnator.entrypoints=web
-      #public (later)
-      #
-
       - traefik.http.services.iptvnator.loadbalancer.server.port=80
 
     volumes:
@@ -32,3 +28,4 @@ volumes:
 networks:
   proxy:
     external: true
+
