@@ -33,12 +33,13 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-
-        #- traefik.http.routers.traefik.rule=Host(`traefik.${LAN_DOMAIN}`)
+ 
       - traefik.http.routers.traefik.rule=Host(`traefik.${LAN_DOMAIN}`)
       - traefik.http.routers.traefik.entrypoints=web
       - traefik.http.routers.traefik.service=api@internal
-      - traefik.http.routers.traefik.middlewares=dash-allowlist@file,dash-auth@file
+     
+      - traefik.http.middlewares.dash-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}
+      - traefik.http.routers.traefik.middlewares=dash-allowlist@file,dash-auth
 
 networks:
   proxy:
