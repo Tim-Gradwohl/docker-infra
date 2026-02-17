@@ -10,9 +10,10 @@ services:
       - "53:53/udp"
 
     volumes:
-      - ./data/work:/opt/adguardhome/work
-      - ./data/conf:/opt/adguardhome/conf
-
+      #- ./data/work:/opt/adguardhome/work
+      #- ./data/conf:/opt/adguardhome/conf
+      - /home/tim/stacks/apps/adguardhome/data/work:/opt/adguardhome/work
+      - /home/tim/stacks/apps/adguardhome/data/conf:/opt/adguardhome/conf
     networks:
       - proxy
 
