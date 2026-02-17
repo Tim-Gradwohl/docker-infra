@@ -29,3 +29,6 @@ model-cache/
 # OS
 .DS_Store
 
+
+# AdGuard runtime/state
+apps/adguardhome/data/
