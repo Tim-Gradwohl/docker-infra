@@ -53,8 +53,10 @@ services:
   immich-machine-learning:
     container_name: immich_machine_learning
     image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
-    env_file:
-      - .env
+      #env_file:
+      #- .env
+    environment:
+      - TZ=${TZ:-Europe/Berlin}
     restart: unless-stopped
     volumes:
       - model-cache:/cache
