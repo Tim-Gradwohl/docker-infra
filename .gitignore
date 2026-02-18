@@ -66,3 +66,5 @@ apps/metube/downloads/**
 # Keep stack wrapper
 !stack
 
+# Per-app environment files
+**/.env
