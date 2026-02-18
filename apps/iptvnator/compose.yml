@@ -5,9 +5,6 @@ services:
     container_name: iptvnator
     restart: unless-stopped
 
-    env_file:
-      - ../../shared/.env.global
-
     networks:
       - proxy
     labels:
