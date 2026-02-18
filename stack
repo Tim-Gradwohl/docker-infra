@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="/home/tim/stacks"
+ENV_GLOBAL="${ROOT}/shared/.env.global"
+ENV_SECRETS="${ROOT}/shared/.env.secrets"
+
+# Stacks (compose files)
+declare -A STACKS
+STACKS[gateway]="${ROOT}/gateway/compose.yml"
+STACKS[adguardhome]="${ROOT}/apps/adguardhome/compose.yml"
+STACKS[gitea]="${ROOT}/apps/gitea/compose.yml"
+STACKS[immich]="${ROOT}/apps/immich/compose.yml"
+STACKS[metube]="${ROOT}/apps/metube/compose.yml"
+STACKS[iptvnator]="${ROOT}/apps/iptvnator/compose.yml"
+
+# Which stacks require secrets at deploy-time (for interpolation + fail-fast guards)
+REQUIRES_SECRETS_REGEX='^(gateway|immich)$'
+
+usage() {
+  cat <<USAGE
+Usage:
+  ./stack <cmd> <stack|all> [compose_args...]
+
+Commands:
+  config     Validate/print resolved compose
+  up         Deploy (up -d by default)
+  down       Stop/remove stack
+  pull       Pull images
+  restart    Restart services
+  logs       Follow logs
+  ps         Show containers
+
+Examples:
+  ./stack config gateway
+  ./stack up gateway
+  ./stack up immich --remove-orphans
+  ./stack pull all
+  ./stack logs traefik
+  ./stack down metube
+
+Notes:
+- Always uses: ${ENV_GLOBAL}
+- Uses secrets for: gateway, immich -> ${ENV_SECRETS}
+- Ensure bcrypt hashes in .env.secrets escape \$ as \$\$
+USAGE
+}
+
+need_files() {
+  if [[ ! -f "${ENV_GLOBAL}" ]]; then
+    echo "ERROR: Missing ${ENV_GLOBAL}" >&2
+    exit 1
+  fi
+  if [[ "${1}" =~ ${REQUIRES_SECRETS_REGEX} ]] && [[ ! -f "${ENV_SECRETS}" ]]; then
+    echo "ERROR: Missing ${ENV_SECRETS} (required for stack: ${1})" >&2
+    exit 1
+  fi
+  if [[ ! -f "${STACKS[$1]}" ]]; then
+    echo "ERROR: Missing compose file for stack '${1}': ${STACKS[$1]}" >&2
+    exit 1
+  fi
+}
+
+compose() {
+  local stack="$1"
+  shift
+
+  local args=(docker compose --project-name "${stack}" --project-directory "${ROOT}" --env-file "${ENV_GLOBAL}")
+
+  if [[ "${stack}" =~ ${REQUIRES_SECRETS_REGEX} ]]; then
+    args+=(--env-file "${ENV_SECRETS}")
+  fi
+  args+=(-f "${STACKS[$stack]}")
+  args+=("$@")
+  "${args[@]}"
+}
+
+cmd="${1:-}"
+stack="${2:-}"
+
+if [[ -z "${cmd}" || -z "${stack}" ]]; then
+  usage
+  exit 1
+fi
+
+if [[ "${cmd}" == "-h" || "${cmd}" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+if [[ "${stack}" != "all" && -z "${STACKS[$stack]:-}" ]]; then
+  echo "ERROR: Unknown stack '${stack}'" >&2
+  echo "Known stacks: ${!STACKS[*]} all" >&2
+  exit 1
+fi
+
+run_one() {
+  local s="$1"
+  need_files "${s}"
+
+  case "${cmd}" in
+    config)  compose "${s}" config ;;
+    up)      compose "${s}" up -d "${@:3}" ;;
+    down)    compose "${s}" down "${@:3}" ;;
+    pull)    compose "${s}" pull "${@:3}" ;;
+    restart) compose "${s}" restart "${@:3}" ;;
+    logs)    compose "${s}" logs -f "${@:3}" ;;
+    ps)      compose "${s}" ps "${@:3}" ;;
+    *)
+      echo "ERROR: Unknown command '${cmd}'" >&2
+      usage
+      exit 1
+      ;;
+  esac
+}
+
+if [[ "${stack}" == "all" ]]; then
+  # Reasonable order: gateway first (routing), then services
+  order=(gateway gitea adguardhome immich metube iptvnator)
+
+  # Forward only extra args AFTER "<cmd> all"
+  extra_args=("${@:3}")
+
+  for s in "${order[@]}"; do
+    echo "==> ${cmd} ${s}"
+    need_files "${s}"
+
+    case "${cmd}" in
+      config)  compose "${s}" config ;;
+      up)      compose "${s}" up -d "${extra_args[@]}" ;;
+      down)    compose "${s}" down "${extra_args[@]}" ;;
+      pull)    compose "${s}" pull "${extra_args[@]}" ;;
+      restart) compose "${s}" restart "${extra_args[@]}" ;;
+      logs)    compose "${s}" logs -f "${extra_args[@]}" ;;
+      ps)      compose "${s}" ps "${extra_args[@]}" ;;
+      *)
+        echo "ERROR: Unknown command '${cmd}'" >&2
+        usage
+        exit 1
+        ;;
+    esac
+  done
+else
+  run_one "${stack}" "$@"
+fi
+
