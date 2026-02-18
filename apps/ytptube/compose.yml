@@ -1,0 +1,36 @@
+services:
+  ytptube:
+    image: ghcr.io/arabcoders/ytptube:latest
+    restart: unless-stopped
+
+    # Match upstream recommendation (run as a normal user). :contentReference[oaicite:2]{index=2}
+    # In your WSL Ubuntu setup, 1000:1000 is usually "tim".
+    user: "1000:1000"
+
+    volumes:
+      - /home/tim/stacks/apps/ytptube/config:/config:rw
+      - /mnt/d/Docker/ytptube/downloads:/downloads:rw
+
+    # Upstream uses tmpfs for /tmp (optional). :contentReference[oaicite:3]{index=3}
+    tmpfs:
+      - /tmp
+
+    networks:
+      - proxy
+
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+
+      - traefik.http.routers.ytptube.rule=Host(`ytptube.${LAN_DOMAIN}`)
+      - traefik.http.routers.ytptube.entrypoints=web
+      - traefik.http.routers.ytptube.service=ytptube
+      - traefik.http.services.ytptube.loadbalancer.server.port=8081
+
+      # Optional hardening if you want LAN-only access while WAN :80 is forwarded:
+      # - traefik.http.routers.ytptube.middlewares=lan-allowlist@file
+
+networks:
+  proxy:
+    external: true
+
