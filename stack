@@ -13,9 +13,11 @@ STACKS[gitea]="${ROOT}/apps/gitea/compose.yml"
 STACKS[immich]="${ROOT}/apps/immich/compose.yml"
 STACKS[metube]="${ROOT}/apps/metube/compose.yml"
 STACKS[iptvnator]="${ROOT}/apps/iptvnator/compose.yml"
+STACKS[ytptube]="${ROOT}/apps/ytptube/compose.yml"
+STACKS[qbittorrentvpn]="${ROOT}/apps/qbittorrentvpn/compose.yml"
 
 # Which stacks require secrets at deploy-time (for interpolation + fail-fast guards)
-REQUIRES_SECRETS_REGEX='^(gateway|immich)$'
+REQUIRES_SECRETS_REGEX='^(gateway|immich|qbittorrentvpn)$'
 
 usage() {
   cat <<USAGE
@@ -36,27 +38,37 @@ Examples:
   ./stack up gateway
   ./stack up immich --remove-orphans
   ./stack pull all
-  ./stack logs traefik
+  ./stack logs gateway traefik
   ./stack down metube
 
 Notes:
 - Always uses: ${ENV_GLOBAL}
-- Uses secrets for: gateway, immich -> ${ENV_SECRETS}
+- Uses secrets for stacks matching: ${REQUIRES_SECRETS_REGEX} -> ${ENV_SECRETS}
 - Ensure bcrypt hashes in .env.secrets escape \$ as \$\$
 USAGE
 }
 
 need_files() {
+  local s="$1"
+
   if [[ ! -f "${ENV_GLOBAL}" ]]; then
     echo "ERROR: Missing ${ENV_GLOBAL}" >&2
     exit 1
   fi
-  if [[ "${1}" =~ ${REQUIRES_SECRETS_REGEX} ]] && [[ ! -f "${ENV_SECRETS}" ]]; then
-    echo "ERROR: Missing ${ENV_SECRETS} (required for stack: ${1})" >&2
+
+  if [[ "${s}" =~ ${REQUIRES_SECRETS_REGEX} ]] && [[ ! -f "${ENV_SECRETS}" ]]; then
+    echo "ERROR: Missing ${ENV_SECRETS} (required for stack: ${s})" >&2
     exit 1
   fi
-  if [[ ! -f "${STACKS[$1]}" ]]; then
-    echo "ERROR: Missing compose file for stack '${1}': ${STACKS[$1]}" >&2
+
+  if [[ -z "${STACKS[$s]:-}" ]]; then
+    echo "ERROR: Unknown stack '${s}'" >&2
+    echo "Known stacks: ${!STACKS[*]} all" >&2
+    exit 1
+  fi
+
+  if [[ ! -f "${STACKS[$s]}" ]]; then
+    echo "ERROR: Missing compose file for stack '${s}': ${STACKS[$s]}" >&2
     exit 1
   fi
 }
@@ -65,13 +77,19 @@ compose() {
   local stack="$1"
   shift
 
-  local args=(docker compose --project-name "${stack}" --project-directory "${ROOT}" --env-file "${ENV_GLOBAL}")
+  local args=(docker compose
+    --project-name "${stack}"
+    --project-directory "${ROOT}"
+    --env-file "${ENV_GLOBAL}"
+  )
 
   if [[ "${stack}" =~ ${REQUIRES_SECRETS_REGEX} ]]; then
     args+=(--env-file "${ENV_SECRETS}")
   fi
+
   args+=(-f "${STACKS[$stack]}")
   args+=("$@")
+
   "${args[@]}"
 }
 
@@ -88,24 +106,19 @@ if [[ "${cmd}" == "-h" || "${cmd}" == "--help" ]]; then
   exit 0
 fi
 
-if [[ "${stack}" != "all" && -z "${STACKS[$stack]:-}" ]]; then
-  echo "ERROR: Unknown stack '${stack}'" >&2
-  echo "Known stacks: ${!STACKS[*]} all" >&2
-  exit 1
-fi
-
 run_one() {
   local s="$1"
+  shift
   need_files "${s}"
 
   case "${cmd}" in
     config)  compose "${s}" config ;;
-    up)      compose "${s}" up -d "${@:3}" ;;
-    down)    compose "${s}" down "${@:3}" ;;
-    pull)    compose "${s}" pull "${@:3}" ;;
-    restart) compose "${s}" restart "${@:3}" ;;
-    logs)    compose "${s}" logs -f "${@:3}" ;;
-    ps)      compose "${s}" ps "${@:3}" ;;
+    up)      compose "${s}" up -d "$@" ;;
+    down)    compose "${s}" down "$@" ;;
+    pull)    compose "${s}" pull "$@" ;;
+    restart) compose "${s}" restart "$@" ;;
+    logs)    compose "${s}" logs -f "$@" ;;
+    ps)      compose "${s}" ps "$@" ;;
     *)
       echo "ERROR: Unknown command '${cmd}'" >&2
       usage
@@ -116,7 +129,7 @@ run_one() {
 
 if [[ "${stack}" == "all" ]]; then
   # Reasonable order: gateway first (routing), then services
-  order=(gateway gitea adguardhome immich metube iptvnator)
+  order=(gateway gitea adguardhome immich metube iptvnator ytptube qbittorrentvpn)
 
   # Forward only extra args AFTER "<cmd> all"
   extra_args=("${@:3}")
@@ -141,6 +154,8 @@ if [[ "${stack}" == "all" ]]; then
     esac
   done
 else
-  run_one "${stack}" "$@"
+  # IMPORTANT: only pass compose args after "<cmd> <stack>"
+  need_files "${stack}"
+  run_one "${stack}" "${@:3}"
 fi
 

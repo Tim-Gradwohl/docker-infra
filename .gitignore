@@ -1,35 +1,68 @@
-# Secrets
-.env
+############################################
+# Secrets (never version)
+############################################
+
 shared/.env.secrets
+*.env.local
+*.key
+*.pem
+*.crt
 
-# AdGuard runtime/state (do not version)
-apps/adguardhome/data/work/
-apps/adguardhome/data/conf/
 
-# General runtime data you never want in git
+############################################
+# General runtime data (never version)
+############################################
+
 **/data/
 **/work/
 **/conf/
-**/*.db
-**/*.json
-**/*.log
+**/downloads/
+**/tmp/
+**/cache/
+**/logs/
 
-# MeTube runtime state (do not version)
+**/*.log
+**/*.json
+
+
+############################################
+# App config/runtime bind mounts
+############################################
+
+# Generic config directories (app state)
+**/config/
+
+# qBittorrentVPN runtime state
+apps/qbittorrentvpn/gluetun/
+apps/qbittorrentvpn/qbittorrent/
+
+# MeTube runtime
 apps/metube/downloads/
 apps/metube/downloads/**
 
-# Optional: if you want to version only an empty downloads dir, keep this commented:
-# !apps/metube/downloads/.gitkeep
 
-# Caches
-model-cache/
+############################################
+# Docker / system junk
+############################################
 
-# Logs
-*.log
-
-# OS
+*.pid
+*.sock
+*.swp
+*.bak
 .DS_Store
 
 
-# AdGuard runtime/state
-apps/adguardhome/data/
+############################################
+# Keep infrastructure code versioned
+############################################
+
+# Explicitly keep scripts (even if under ignored patterns)
+!apps/qbittorrentvpn/scripts/
+!apps/qbittorrentvpn/scripts/**
+
+# Keep compose files
+!**/compose.yml
+
+# Keep stack wrapper
+!stack
+

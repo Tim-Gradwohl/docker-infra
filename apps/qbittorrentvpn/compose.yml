@@ -6,67 +6,54 @@ services:
       - NET_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
-
-    # Put gluetun on the proxy network so Traefik can route to it.
     networks:
       - proxy
-
     volumes:
       - /home/tim/stacks/apps/qbittorrentvpn/gluetun:/gluetun:rw
-
     environment:
-      # REQUIRED: choose provider + vpn type (openvpn or wireguard)
-      # See gluetun docs for provider-specific required vars. :contentReference[oaicite:3]{index=3}
-      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER:?set in shared/.env.secrets}
-      - VPN_TYPE=${VPN_TYPE:-openvpn}
-
-      # OpenVPN credentials (if VPN_TYPE=openvpn)
-      - OPENVPN_USER=${OPENVPN_USER:-}
-      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD:-}
-
-      # WireGuard (if VPN_TYPE=wireguard)
-      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY:-}
-      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES:-}
-
-      # Optional but usually useful:
-      - TZ=${TZ:-Etc/UTC}
-
-    # Expose qBittorrent ports *from the gluetun namespace* (qbit shares it below)
-    # (No host ports are published; Traefik will route HTTP to 8080 via labels.)
+      - VPN_SERVICE_PROVIDER=private internet access
+      - VPN_TYPE=openvpn
+      - OPENVPN_USER=${OPENVPN_USER:?set in shared/.env.secrets}
+      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD:?set in shared/.env.secrets}
+      - PORT_FORWARDING=on
+      - PORT_FORWARDING_STATUS_FILE=/gluetun/forwarded_port
+      - FIREWALL=on
+      - TZ=Europe/Berlin
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-
-      # Route qBittorrent WebUI through Traefik to port 8080 in this namespace
       - traefik.http.routers.qbittorrent.rule=Host(`qbittorrent.${LAN_DOMAIN}`)
       - traefik.http.routers.qbittorrent.entrypoints=web
       - traefik.http.routers.qbittorrent.service=qbittorrent
       - traefik.http.services.qbittorrent.loadbalancer.server.port=8080
 
-      # OPTIONAL hardening (recommended since WAN :80 is forwarded):
-      # - traefik.http.routers.qbittorrent.middlewares=lan-allowlist@file
-
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     restart: unless-stopped
-
-    # CRITICAL: force all qBittorrent networking through gluetun (VPN)
     network_mode: "service:gluetun"
     depends_on:
       - gluetun
-
     environment:
       - PUID=${PUID:-1000}
       - PGID=${PGID:-1000}
-      - TZ=${TZ:-Etc/UTC}
-
-      # LinuxServer qBittorrent supports these. :contentReference[oaicite:4]{index=4}
+      - TZ=Europe/Berlin
       - WEBUI_PORT=8080
-      - TORRENTING_PORT=6881
-
+        #- TORRENTING_PORT=6881
     volumes:
       - /home/tim/stacks/apps/qbittorrentvpn/qbittorrent:/config:rw
       - /mnt/d/Torrent:/downloads:rw
+
+  port-sync:
+    image: docker:27-cli
+    restart: unless-stopped
+    volumes:
+      - /home/tim/stacks/apps/qbittorrentvpn/qbittorrent:/config:rw
+      - /home/tim/stacks/apps/qbittorrentvpn/gluetun:/gluetun:ro
+      - /home/tim/stacks/apps/qbittorrentvpn/scripts:/scripts:ro
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+    environment:
+      - TARGET_CONTAINER=qbittorrentvpn-qbittorrent-1
+    command: ["/bin/sh", "/scripts/sync-port.sh"]
 
 networks:
   proxy:
