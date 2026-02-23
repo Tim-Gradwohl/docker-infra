@@ -69,3 +69,9 @@ apps/metube/downloads/**
 # Per-app environment files
 **/.env
 apps/qbittorrentvpn/wireguard-pia/
+
+# transkun runtime
+apps/transkun/data/
+
+# Transkun runtime data
+apps/transkun/data/
