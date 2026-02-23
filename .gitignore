@@ -68,3 +68,4 @@ apps/metube/downloads/**
 
 # Per-app environment files
 **/.env
+apps/qbittorrentvpn/wireguard-pia/
