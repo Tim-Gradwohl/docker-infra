@@ -1,0 +1,43 @@
+services:
+  syncthing:
+    image: lscr.io/linuxserver/syncthing:latest
+    container_name: syncthing
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      # Config + database
+      - /home/tim/stacks/apps/syncthing/config:/config
+      # Default shared folder root
+      - /home/tim/stacks/apps/syncthing/data:/data
+    networks:
+      - proxy
+      - internal
+
+    # Syncthing needs real L4 ports for device sync; Traefik can't proxy these.
+    # Expose them on the Windows host and restrict via Windows Firewall to LAN.
+    ports:
+      - "23100:22000/tcp"   # Sync (TCP) - Docker Syncthing only
+      - "23100:22000/udp"   # QUIC (UDP) - Docker Syncthing only
+      - "21127:21027/udp"   # Local discovery - Docker Syncthing only
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+
+      # Web UI (8384) routed via Traefik (no host port published for UI)
+      - traefik.http.routers.syncthing.rule=Host(`syncthing.${LAN_DOMAIN}`)
+      - traefik.http.routers.syncthing.entrypoints=web
+      - traefik.http.services.syncthing.loadbalancer.server.port=8384
+
+      # Optional (recommended): LAN-only access like your dashboard model.
+      # This assumes you already have (or will add) an allowlist middleware in file provider.
+      # - traefik.http.routers.syncthing.middlewares=lan-allowlist@file
+
+    restart: unless-stopped
+
+networks:
+  proxy:
+    external: true
+  internal:
+    name: syncthing_internal

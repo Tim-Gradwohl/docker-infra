@@ -15,7 +15,8 @@ STACKS[metube]="${ROOT}/apps/metube/compose.yml"
 STACKS[iptvnator]="${ROOT}/apps/iptvnator/compose.yml"
 STACKS[ytptube]="${ROOT}/apps/ytptube/compose.yml"
 STACKS[qbittorrentvpn]="${ROOT}/apps/qbittorrentvpn/compose.yml"
-
+STACKS[obsidian]="${ROOT}/apps/obsidian/compose.yml"
+STACKS[syncthing]="${ROOT}/apps/syncthing/compose.yml"
 # Which stacks require secrets at deploy-time (for interpolation + fail-fast guards)
 REQUIRES_SECRETS_REGEX='^(gateway|immich|qbittorrentvpn)$'
 

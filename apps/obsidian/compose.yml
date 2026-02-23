@@ -1,0 +1,40 @@
+name: obsidian
+
+services:
+  obsidian:
+    image: lscr.io/linuxserver/obsidian:latest
+    container_name: obsidian
+    restart: unless-stopped
+
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Berlin
+
+    volumes:
+      - /mnt/d/Docker/obsidian:/config
+
+    # Electron/GUI-in-browser containers behave better with a larger /dev/shm
+    shm_size: "1gb"
+
+    networks:
+      - proxy
+
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+
+      # HTTPS router (requires gateway websecure :443)
+      - traefik.http.routers.obsidian.rule=Host(`obsidian.${LAN_DOMAIN}`)
+      - traefik.http.routers.obsidian.entrypoints=websecure
+      - traefik.http.routers.obsidian.tls=true
+
+      # Obsidian HTTPS backend (inside container)
+      - traefik.http.services.obsidian.loadbalancer.server.port=3001
+      - traefik.http.services.obsidian.loadbalancer.server.scheme=https
+      - traefik.http.services.obsidian.loadbalancer.serverstransport=ignorecert@file
+
+networks:
+  proxy:
+    external: true
+

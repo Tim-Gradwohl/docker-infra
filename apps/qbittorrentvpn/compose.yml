@@ -19,6 +19,19 @@ services:
       - PORT_FORWARDING_STATUS_FILE=/gluetun/forwarded_port
       - FIREWALL=on
       - TZ=Europe/Berlin
+      - SERVER_REGIONS=Netherlands
+    
+      #- VPN_SERVICE_PROVIDER=private internet access
+      #- VPN_TYPE=wireguard
+      #- WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY:?set in shared/.env.secrets}
+      #- SERVER_REGIONS=Netherlands
+      #- PORT_FORWARDING=on
+      #- PORT_FORWARDING_STATUS_FILE=/gluetun/forwarded_port
+      #- FIREWALL=on
+      #- TZ=Europe/Berlin
+
+
+
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
