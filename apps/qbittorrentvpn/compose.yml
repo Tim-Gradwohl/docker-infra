@@ -1,37 +1,25 @@
 services:
+
   gluetun:
     image: qmcgaw/gluetun:latest
-    restart: unless-stopped
+    container_name: qbittorrentvpn_gluetun
     cap_add:
       - NET_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
+    volumes:
+      # Gluetun state + forwarded_port contract
+      - /home/tim/stacks/apps/qbittorrentvpn/gluetun:/gluetun
+      # Generated WireGuard config
+      - /home/tim/stacks/apps/qbittorrentvpn/wireguard-pia/wg0.conf:/gluetun/wireguard/wg0.conf:ro
+    environment:
+      - VPN_SERVICE_PROVIDER=custom
+      - VPN_TYPE=wireguard
+      - FIREWALL=on
+      - LOG_LEVEL=info
     networks:
       - proxy
-    volumes:
-      - /home/tim/stacks/apps/qbittorrentvpn/gluetun:/gluetun:rw
-    environment:
-      - VPN_SERVICE_PROVIDER=private internet access
-      - VPN_TYPE=openvpn
-      - OPENVPN_USER=${OPENVPN_USER:?set in shared/.env.secrets}
-      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD:?set in shared/.env.secrets}
-      - PORT_FORWARDING=on
-      - PORT_FORWARDING_STATUS_FILE=/gluetun/forwarded_port
-      - FIREWALL=on
-      - TZ=Europe/Berlin
-      - SERVER_REGIONS=Netherlands
-    
-      #- VPN_SERVICE_PROVIDER=private internet access
-      #- VPN_TYPE=wireguard
-      #- WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY:?set in shared/.env.secrets}
-      #- SERVER_REGIONS=Netherlands
-      #- PORT_FORWARDING=on
-      #- PORT_FORWARDING_STATUS_FILE=/gluetun/forwarded_port
-      #- FIREWALL=on
-      #- TZ=Europe/Berlin
-
-
-
+      - internal
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
@@ -39,36 +27,85 @@ services:
       - traefik.http.routers.qbittorrent.entrypoints=web
       - traefik.http.routers.qbittorrent.service=qbittorrent
       - traefik.http.services.qbittorrent.loadbalancer.server.port=8080
+    restart: unless-stopped
+
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
-    restart: unless-stopped
+    container_name: qbittorrentvpn-qbittorrent-1
     network_mode: "service:gluetun"
-    depends_on:
-      - gluetun
     environment:
       - PUID=${PUID:-1000}
       - PGID=${PGID:-1000}
-      - TZ=Europe/Berlin
-      - WEBUI_PORT=8080
-        #- TORRENTING_PORT=6881
+      - TZ=${TZ:-Europe/Berlin}
     volumes:
-      - /home/tim/stacks/apps/qbittorrentvpn/qbittorrent:/config:rw
-      - /mnt/d/Torrent:/downloads:rw
+      - /home/tim/stacks/apps/qbittorrentvpn/qbittorrent:/config
+      - /mnt/d/Torrent:/downloads
+    depends_on:
+      - gluetun
+    restart: unless-stopped
 
+
+  # Handles PIA WireGuard port forwarding + keepalive
+  pia-pf:
+    image: thrnz/docker-wireguard-pia:latest
+    container_name: qbittorrentvpn_pia-pf
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - /home/tim/stacks/apps/qbittorrentvpn/wireguard-pia:/pia-shared
+    environment:
+      - USER=${PIA_USERNAME}
+      - PASS=${PIA_PASSWORD}
+      - LOC=de-frankfurt   # must match wg0.conf location
+      - PORT_FORWARDING=1
+    restart: unless-stopped
+
+
+  # Mirrors port.dat → /gluetun/forwarded_port (your existing contract)
+  pf-writer:
+    image: alpine:3.20
+    container_name: qbittorrentvpn_pf-writer
+    depends_on:
+      - pia-pf
+    volumes:
+      - /home/tim/stacks/apps/qbittorrentvpn/wireguard-pia:/pia-shared:ro
+      - /home/tim/stacks/apps/qbittorrentvpn/gluetun:/gluetun
+    command: >
+      /bin/sh -lc '
+        while true; do
+          if [ -f /pia-shared/port.dat ]; then
+            cat /pia-shared/port.dat > /gluetun/forwarded_port;
+          fi;
+          sleep 5;
+        done
+      '
+    restart: unless-stopped
+
+
+  # Your existing automatic qBittorrent port updater
   port-sync:
     image: docker:27-cli
-    restart: unless-stopped
+    container_name: qbittorrentvpn_port-sync
+    depends_on:
+      - gluetun
+      - qbittorrent
+      - pf-writer
     volumes:
-      - /home/tim/stacks/apps/qbittorrentvpn/qbittorrent:/config:rw
+      - /var/run/docker.sock:/var/run/docker.sock
       - /home/tim/stacks/apps/qbittorrentvpn/gluetun:/gluetun:ro
+      - /home/tim/stacks/apps/qbittorrentvpn/qbittorrent:/config
       - /home/tim/stacks/apps/qbittorrentvpn/scripts:/scripts:ro
-      - /var/run/docker.sock:/var/run/docker.sock:rw
     environment:
-      - TARGET_CONTAINER=qbittorrentvpn-qbittorrent-1
-    command: ["/bin/sh", "/scripts/sync-port.sh"]
+      - TZ=${TZ:-Europe/Berlin}
+    entrypoint: ["/bin/sh", "/scripts/sync-port.sh"]
+    restart: unless-stopped
+
 
 networks:
   proxy:
     external: true
-
+  internal:
+    driver: bridge
