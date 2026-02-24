@@ -18,6 +18,7 @@ STACKS[qbittorrentvpn]="${ROOT}/apps/qbittorrentvpn/compose.yml"
 STACKS[obsidian]="${ROOT}/apps/obsidian/compose.yml"
 STACKS[syncthing]="${ROOT}/apps/syncthing/compose.yml"
 STACKS[generate_piawg]="${ROOT}/apps/qbittorrentvpn/wireguard-pia/compose.yml"
+STACKS[transkun]="${ROOT}/apps/transkun/compose.yml"
 # Which stacks require secrets at deploy-time (for interpolation + fail-fast guards)
 REQUIRES_SECRETS_REGEX='^(gateway|immich|qbittorrentvpn|generate_piawg)$'
 
