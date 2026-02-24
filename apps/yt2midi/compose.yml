@@ -1,0 +1,32 @@
+services:
+  yt2midi_web:
+    container_name: yt2midi_web
+    build:
+      context: /home/tim/stacks/apps/yt2midi
+      dockerfile: /home/tim/stacks/apps/yt2midi/Dockerfile
+    restart: unless-stopped
+    working_dir: /app
+    command: ["bash", "-lc", "uvicorn app:app --host 0.0.0.0 --port 8000"]
+    networks:
+      - internal
+      - proxy
+    volumes:
+      - /home/tim/stacks/apps/yt2midi/data/in:/data/in:rw
+      - /home/tim/stacks/apps/yt2midi/data/out:/data/out:rw
+    gpus: all
+    environment:
+      - TZ=Europe/Berlin
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.yt2midi.rule=Host(`yt2midi.${LAN_DOMAIN}`)
+      - traefik.http.routers.yt2midi.entrypoints=web
+      - traefik.http.services.yt2midi.loadbalancer.server.port=8000
+      # OPTIONAL hardening (enable if you have a LAN allowlist middleware defined in Traefik file provider):
+      # - traefik.http.routers.yt2midi.middlewares=lan-allowlist@file
+
+networks:
+  internal:
+    external: false
+  proxy:
+    external: true
