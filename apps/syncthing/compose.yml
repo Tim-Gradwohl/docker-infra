@@ -26,7 +26,7 @@ services:
       - traefik.docker.network=proxy
 
       # Web UI (8384) routed via Traefik (no host port published for UI)
-      - traefik.http.routers.syncthing.rule=Host(`syncthing.${LAN_DOMAIN}`)
+      - traefik.http.routers.syncthing.rule=Host(`syncthing.${BASE_DOMAIN}`)
       - traefik.http.routers.syncthing.entrypoints=web
       - traefik.http.services.syncthing.loadbalancer.server.port=8384
 

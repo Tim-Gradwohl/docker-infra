@@ -22,7 +22,7 @@ services:
       - traefik.enable=true
       - traefik.docker.network=proxy
 
-      - traefik.http.routers.ytptube.rule=Host(`ytptube.${LAN_DOMAIN}`)
+      - traefik.http.routers.ytptube.rule=Host(`ytptube.${BASE_DOMAIN}`)
       - traefik.http.routers.ytptube.entrypoints=web
       - traefik.http.routers.ytptube.service=ytptube
       - traefik.http.services.ytptube.loadbalancer.server.port=8081

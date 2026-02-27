@@ -11,7 +11,7 @@ services:
       - traefik.enable=true
       - traefik.docker.network=proxy
       # LAN-only host routing using global variable
-      - traefik.http.routers.iptvnator.rule=Host(`iptv.${LAN_DOMAIN}`)
+      - traefik.http.routers.iptvnator.rule=Host(`iptv.${BASE_DOMAIN}`)
       - traefik.http.routers.iptvnator.entrypoints=web
       - traefik.http.services.iptvnator.loadbalancer.server.port=80
 

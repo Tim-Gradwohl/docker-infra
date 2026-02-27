@@ -19,7 +19,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-      - traefik.http.routers.yt2midi.rule=Host(`yt2midi.${LAN_DOMAIN}`)
+      - traefik.http.routers.yt2midi.rule=Host(`yt2midi.${BASE_DOMAIN}`)
       - traefik.http.routers.yt2midi.entrypoints=web
       - traefik.http.services.yt2midi.loadbalancer.server.port=8000
       # OPTIONAL hardening (enable if you have a LAN allowlist middleware defined in Traefik file provider):

@@ -23,7 +23,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-      - traefik.http.routers.qbittorrent.rule=Host(`qbittorrent.${LAN_DOMAIN}`)
+      - traefik.http.routers.qbittorrent.rule=Host(`qbittorrent.${BASE_DOMAIN}`)
       - traefik.http.routers.qbittorrent.entrypoints=web
       - traefik.http.routers.qbittorrent.service=qbittorrent
       - traefik.http.services.qbittorrent.loadbalancer.server.port=8080

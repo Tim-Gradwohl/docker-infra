@@ -32,7 +32,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-      - traefik.http.routers.transkun.rule=Host(`transkun.${LAN_DOMAIN}`)
+      - traefik.http.routers.transkun.rule=Host(`transkun.${BASE_DOMAIN}`)
       - traefik.http.routers.transkun.entrypoints=web
       - traefik.http.services.transkun.loadbalancer.server.port=8000
 
