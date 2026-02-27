@@ -1,0 +1,92 @@
+services:
+  authentik_postgres:
+    image: postgres:16-alpine
+    container_name: authentik_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${AUTHENTIK_PG_DB}
+      POSTGRES_USER: ${AUTHENTIK_PG_USER}
+      POSTGRES_PASSWORD: ${AUTHENTIK_PG_PASS}
+    volumes:
+      - authentik_pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AUTHENTIK_PG_USER} -d ${AUTHENTIK_PG_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  authentik_server:
+    image: ghcr.io/goauthentik/server:2025.12.4
+    container_name: authentik_server
+    restart: unless-stopped
+    command: server
+    depends_on:
+      authentik_postgres:
+        condition: service_healthy
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+      POSTGRES_PASSWORD: ${AUTHENTIK_PG_PASS}
+
+      AUTHENTIK_POSTGRESQL__HOST: authentik_postgres
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_PG_DB}
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_PG_USER}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_PG_PASS}
+
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD}
+      AUTHENTIK_BOOTSTRAP_EMAIL: ${AUTHENTIK_BOOTSTRAP_EMAIL}
+      AUTHENTIK_BOOTSTRAP_USERNAME: ${AUTHENTIK_BOOTSTRAP_USERNAME}
+
+      AUTHENTIK_LISTEN__HTTP: "0.0.0.0:9000"
+    volumes:
+      - authentik_media:/data/media
+      - authentik_templates:/templates
+    networks:
+      - internal
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+
+      - traefik.http.routers.authentik.rule=Host(`auth.timopoly.com`)
+      - traefik.http.routers.authentik.entrypoints=websecure
+      - traefik.http.routers.authentik.tls=true
+
+      - traefik.http.services.authentik.loadbalancer.server.port=9000
+
+      - traefik.http.routers.authentik.tls.certresolver=le_cf
+      - traefik.http.routers.authentik.tls.domains[0].main=timopoly.com
+      - traefik.http.routers.authentik.tls.domains[0].sans=*.timopoly.com
+
+  authentik_worker:
+    image: ghcr.io/goauthentik/server:2025.12.4
+    container_name: authentik_worker
+    restart: unless-stopped
+    command: worker
+    depends_on:
+      authentik_postgres:
+        condition: service_healthy
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
+      POSTGRES_PASSWORD: ${AUTHENTIK_PG_PASS}
+      AUTHENTIK_POSTGRESQL__HOST: authentik_postgres
+      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_PG_DB}
+      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_PG_USER}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_PG_PASS}
+    volumes:
+      - authentik_media:/data/media
+      - authentik_templates:/templates
+    networks:
+      - internal
+
+volumes:
+  authentik_pgdata:
+  authentik_media:
+  authentik_templates:
+
+networks:
+  proxy:
+    external: true
+  internal:
+    external: false

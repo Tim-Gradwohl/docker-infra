@@ -1,0 +1,30 @@
+services:
+  yt2midi_v2_web:
+    container_name: yt2midi_v2_web
+    build:
+      context: /home/tim/stacks/apps/yt2midi_v2
+      dockerfile: /home/tim/stacks/apps/yt2midi_v2/Dockerfile
+    restart: unless-stopped
+    working_dir: /app
+    command: ["bash", "-lc", "uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+    networks:
+      - internal
+      - proxy
+    volumes:
+      - /home/tim/stacks/apps/yt2midi_v2/data/in:/data/in:rw
+      - /home/tim/stacks/apps/yt2midi_v2/data/out:/data/out:rw
+    gpus: all
+    environment:
+      - TZ=${TZ}
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.yt2midi-v2.rule=Host(`yt2midi-v2.${LAN_DOMAIN}`)
+      - traefik.http.routers.yt2midi-v2.entrypoints=web
+      - traefik.http.services.yt2midi-v2.loadbalancer.server.port=8000
+
+networks:
+  internal:
+    external: false
+  proxy:
+    external: true

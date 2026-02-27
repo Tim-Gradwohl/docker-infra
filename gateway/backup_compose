@@ -2,7 +2,6 @@ name: gateway
 
 services:
   traefik:
-
     image: traefik:v3.6.4
     container_name: gateway_traefik
     restart: unless-stopped
@@ -14,27 +13,21 @@ services:
       - --providers.docker=true
       - --providers.docker.endpoint=unix:///var/run/docker.sock
       - --providers.docker.exposedbydefault=false
-
       - --providers.file.directory=/etc/traefik/dynamic
       - --providers.file.watch=false
       - --entrypoints.web.address=:80
-
       - --entrypoints.websecure.address=:443
       - --entrypoints.websecure.http.tls=true
 
     ports:
       - "80:80"
-
       - "443:443"
       # removed 8080:8080 (dashboard will be routed + protected)
 
-
     volumes:
-
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /home/tim/stacks/gateway/dynamic:/etc/traefik/dynamic:ro
       - /home/tim/stacks/gateway/certs:/etc/traefik/certs:ro
-
 
     networks:
       - proxy
@@ -43,20 +36,14 @@ services:
       - traefik.enable=true
       - traefik.docker.network=proxy
 
-      - traefik.http.routers.traefik.rule=Host(`traefik.${BASE_DOMAIN}`)
+      - traefik.http.routers.traefik.rule=Host(`traefik.${LAN_DOMAIN}`)
       - traefik.http.routers.traefik.entrypoints=web
       - traefik.http.routers.traefik.service=api@internal
 
-      #- traefik.http.middlewares.dash-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}
-      #- traefik.http.routers.traefik.middlewares=dash-allowlist@file,dash-auth
-
-
-      # LAN-only protection via file-provider middleware (gateway/dynamic/shared.yml)
-
-      - traefik.http.routers.traefik.middlewares=lan-only@file
-
-
+      - traefik.http.middlewares.dash-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}
+      - traefik.http.routers.traefik.middlewares=dash-allowlist@file,dash-auth
 
 networks:
   proxy:
     external: true
+
