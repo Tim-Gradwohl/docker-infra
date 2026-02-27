@@ -5,8 +5,11 @@ services:
     container_name: qbittorrentvpn_gluetun
     cap_add:
       - NET_ADMIN
+      - SYS_MODULE
     devices:
       - /dev/net/tun:/dev/net/tun
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
     volumes:
       # Gluetun state + forwarded_port contract
       - /home/tim/stacks/apps/qbittorrentvpn/gluetun:/gluetun
@@ -15,7 +18,9 @@ services:
     environment:
       - VPN_SERVICE_PROVIDER=custom
       - VPN_TYPE=wireguard
+      - WIREGUARD_IMPLEMENTATION=userspace   # 🔥 REQUIRED for WSL2 stability
       - FIREWALL=on
+      - FIREWALL_INPUT_PORTS=8080
       - LOG_LEVEL=info
     networks:
       - proxy
@@ -23,10 +28,11 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-      - traefik.http.routers.qbittorrent.rule=Host(`qbittorrent.${BASE_DOMAIN}`)
-      - traefik.http.routers.qbittorrent.entrypoints=web
-      - traefik.http.routers.qbittorrent.service=qbittorrent
-      - traefik.http.services.qbittorrent.loadbalancer.server.port=8080
+      - traefik.http.routers.qbittorrentvpn.rule=Host(`qbittorrent.${BASE_DOMAIN}`)
+      - traefik.http.routers.qbittorrentvpn.entrypoints=web
+      - traefik.http.routers.qbittorrentvpn.priority=10000
+      - traefik.http.routers.qbittorrentvpn.service=qbittorrentvpn-svc
+      - traefik.http.services.qbittorrentvpn-svc.loadbalancer.server.port=8080
     restart: unless-stopped
 
 
@@ -46,7 +52,6 @@ services:
     restart: unless-stopped
 
 
-  # Handles PIA WireGuard port forwarding + keepalive
   pia-pf:
     image: thrnz/docker-wireguard-pia:latest
     container_name: qbittorrentvpn_pia-pf
@@ -59,12 +64,11 @@ services:
     environment:
       - USER=${PIA_USERNAME}
       - PASS=${PIA_PASSWORD}
-      - LOC=de-frankfurt   # must match wg0.conf location
+      - LOC=de-frankfurt
       - PORT_FORWARDING=1
     restart: unless-stopped
 
 
-  # Mirrors port.dat → /gluetun/forwarded_port (your existing contract)
   pf-writer:
     image: alpine:3.20
     container_name: qbittorrentvpn_pf-writer
@@ -85,7 +89,6 @@ services:
     restart: unless-stopped
 
 
-  # Your existing automatic qBittorrent port updater
   port-sync:
     image: docker:27-cli
     container_name: qbittorrentvpn_port-sync
