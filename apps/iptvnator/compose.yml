@@ -14,7 +14,8 @@ services:
       - traefik.http.routers.iptvnator.rule=Host(`iptv.${BASE_DOMAIN}`)
       - traefik.http.routers.iptvnator.entrypoints=web
       - traefik.http.services.iptvnator.loadbalancer.server.port=80
-
+        # - traefik.http.routers.iptvnator.middlewares=authentik-chain@file
+      - traefik.http.routers.iptvnator.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
     volumes:
       # Persist IPTVnator app data/settings
       - iptvnator_data:/app/data

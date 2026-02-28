@@ -1,47 +1,101 @@
+name: authentik
+
 services:
-  authentik_postgres:
+  authentik-postgres:
     image: postgres:16-alpine
     container_name: authentik_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${AUTHENTIK_PG_DB}
-      POSTGRES_USER: ${AUTHENTIK_PG_USER}
-      POSTGRES_PASSWORD: ${AUTHENTIK_PG_PASS}
+      POSTGRES_USER: authentik
+      POSTGRES_PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:?set in shared/.env.secrets}
+      POSTGRES_DB: authentik
     volumes:
       - authentik_pgdata:/var/lib/postgresql/data
     networks:
       - internal
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${AUTHENTIK_PG_USER} -d ${AUTHENTIK_PG_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
 
-  authentik_server:
-    image: ghcr.io/goauthentik/server:2025.12.4
+  authentik-redis:
+    image: redis:7-alpine
+    container_name: authentik_redis
+    restart: unless-stopped
+    networks:
+      - internal
+
+  authentik-server:
+    image: ghcr.io/goauthentik/server:latest
     container_name: authentik_server
     restart: unless-stopped
     command: server
-    depends_on:
-      authentik_postgres:
-        condition: service_healthy
     environment:
-      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
-      POSTGRES_PASSWORD: ${AUTHENTIK_PG_PASS}
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?set in shared/.env.secrets}
+      AUTHENTIK_REDIS__HOST: authentik-redis
+      AUTHENTIK_POSTGRESQL__HOST: authentik-postgres
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:?set in shared/.env.secrets}
 
-      AUTHENTIK_POSTGRESQL__HOST: authentik_postgres
-      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_PG_DB}
-      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_PG_USER}
-      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_PG_PASS}
+      AUTHENTIK_HOST: http://auth.${BASE_DOMAIN}
+      AUTHENTIK_LISTEN__HTTP: 0.0.0.0:9000
+      AUTHENTIK_LISTEN__HTTPS: 0.0.0.0:9443
+      AUTHENTIK_DISABLE_STARTUP_ANALYTICS: "true"
 
-      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD}
-      AUTHENTIK_BOOTSTRAP_EMAIL: ${AUTHENTIK_BOOTSTRAP_EMAIL}
-      AUTHENTIK_BOOTSTRAP_USERNAME: ${AUTHENTIK_BOOTSTRAP_USERNAME}
-
-      AUTHENTIK_LISTEN__HTTP: "0.0.0.0:9000"
+    depends_on:
+      - authentik-postgres
+      - authentik-redis
     volumes:
-      - authentik_media:/data/media
-      - authentik_templates:/templates
+      - authentik_media:/media
+    networks:
+      - internal
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.authentik.rule=Host(`auth.${BASE_DOMAIN}`)
+      - traefik.http.routers.authentik.entrypoints=web
+      - traefik.http.services.authentik.loadbalancer.server.port=9000
+      # IMPORTANT: do NOT protect authentik with authentik forwardAuth (bootstrapping)
+
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:latest
+    container_name: authentik_worker
+    restart: unless-stopped
+    command: worker
+    environment:
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?set in shared/.env.secrets}
+      AUTHENTIK_REDIS__HOST: authentik-redis
+      AUTHENTIK_POSTGRESQL__HOST: authentik-postgres
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:?set in shared/.env.secrets}
+      
+      AUTHENTIK_HOST: http://auth.${BASE_DOMAIN}
+      AUTHENTIK_LISTEN__HTTP: 0.0.0.0:9000
+      AUTHENTIK_LISTEN__HTTPS: 0.0.0.0:9443
+      AUTHENTIK_DISABLE_STARTUP_ANALYTICS: "true"
+    depends_on:
+      - authentik-postgres
+      - authentik-redis
+    volumes:
+      - authentik_media:/media
+    networks:
+      - internal
+
+  # Outpost used by Traefik ForwardAuth (we’ll wire this in Step 2)
+  authentik-proxy:
+    image: ghcr.io/goauthentik/proxy:latest
+    container_name: authentik_proxy
+    restart: unless-stopped
+    depends_on:
+      - authentik-server
+    environment:
+      # Internal API URL (Docker-only) ✅
+      AUTHENTIK_HOST: http://authentik-server:9000
+
+      # Public URL the browser can reach ✅ (THIS IS THE FIX)
+      AUTHENTIK_HOST_BROWSER: http://auth.${BASE_DOMAIN}
+
+      AUTHENTIK_INSECURE: "true"
+      AUTHENTIK_TOKEN: ${AUTHENTIK_OUTPOST_TOKEN:-}
     networks:
       - internal
       - proxy
@@ -49,44 +103,19 @@ services:
       - traefik.enable=true
       - traefik.docker.network=proxy
 
-      - traefik.http.routers.authentik.rule=Host(`auth.timopoly.com`)
-      - traefik.http.routers.authentik.entrypoints=websecure
-      - traefik.http.routers.authentik.tls=true
+      # ✅ Route ONLY the outpost paths on auth.<domain> to authentik_proxy
+      - traefik.http.routers.authentik-outpost.rule=Host(`auth.${BASE_DOMAIN}`) && PathPrefix(`/outpost.goauthentik.io/`)
+      - traefik.http.routers.authentik-outpost.entrypoints=web
+      - traefik.http.routers.authentik-outpost.priority=100
+      - traefik.http.services.authentik-outpost.loadbalancer.server.port=9000
 
-      - traefik.http.services.authentik.loadbalancer.server.port=9000
-
-      - traefik.http.routers.authentik.tls.certresolver=le_cf
-      - traefik.http.routers.authentik.tls.domains[0].main=timopoly.com
-      - traefik.http.routers.authentik.tls.domains[0].sans=*.timopoly.com
-
-  authentik_worker:
-    image: ghcr.io/goauthentik/server:2025.12.4
-    container_name: authentik_worker
-    restart: unless-stopped
-    command: worker
-    depends_on:
-      authentik_postgres:
-        condition: service_healthy
-    environment:
-      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY}
-      POSTGRES_PASSWORD: ${AUTHENTIK_PG_PASS}
-      AUTHENTIK_POSTGRESQL__HOST: authentik_postgres
-      AUTHENTIK_POSTGRESQL__NAME: ${AUTHENTIK_PG_DB}
-      AUTHENTIK_POSTGRESQL__USER: ${AUTHENTIK_PG_USER}
-      AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_PG_PASS}
-    volumes:
-      - authentik_media:/data/media
-      - authentik_templates:/templates
-    networks:
-      - internal
 
 volumes:
   authentik_pgdata:
   authentik_media:
-  authentik_templates:
 
 networks:
+  internal:
+    driver: bridge
   proxy:
     external: true
-  internal:
-    external: false
