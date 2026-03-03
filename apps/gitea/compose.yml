@@ -44,7 +44,7 @@ services:
       - traefik.http.routers.gitea.tls.certresolver=cloudflare
     
       #authentik password secure
-      - traefik.http.routers.gitea.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+      # - traefik.http.routers.gitea.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
 
 
       # Service -> container port
