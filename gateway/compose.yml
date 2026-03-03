@@ -2,7 +2,6 @@ name: gateway
 
 services:
   traefik:
-
     image: traefik:v3.6.4
     container_name: gateway_traefik
     restart: unless-stopped
@@ -11,30 +10,63 @@ services:
       - --api=true
       - --api.dashboard=true
       - --log.level=INFO
+
       - --providers.docker=true
       - --providers.docker.endpoint=unix:///var/run/docker.sock
       - --providers.docker.exposedbydefault=false
 
       - --providers.file.directory=/etc/traefik/dynamic
       - --providers.file.watch=false
-      - --entrypoints.web.address=:80
 
+      # Entrypoints
+      - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
+
+      # Redirect all HTTP -> HTTPS
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+
+      # Default TLS on websecure + use LE resolver by default
       - --entrypoints.websecure.http.tls=true
+      - --entrypoints.websecure.http.tls.certresolver=cloudflare
+
+      # ACME (Let's Encrypt) via DNS-01 / Cloudflare
+      - --certificatesresolvers.cloudflare.acme.email=${LETSENCRYPT_EMAIL}
+      - --certificatesresolvers.cloudflare.acme.storage=/etc/traefik/acme/acme.json
+
+      # Start with staging to avoid rate limits (switch to prod later)
+      #--certificatesresolvers.cloudflare.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory  #staging
+      #--certificatesresolvers.cloudflare.acme.caserver=https://acme-v02.api.letsencrypt.org/directory          #prod is default can stay commented out
+
+      - --certificatesresolvers.cloudflare.acme.dnschallenge=true
+      - --certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.cloudflare.acme.dnschallenge.resolvers=1.1.1.1:53,1.0.0.1:53
+
+      # Trust Cloudflare forwarded headers (Tunnel/Edge)
+      - --entrypoints.web.forwardedheaders.trustedips=172.18.0.0/16
+      - --entrypoints.web.forwardedheaders.insecure=false
+      - --entrypoints.websecure.forwardedheaders.trustedips=172.18.0.0/16
+      - --entrypoints.websecure.forwardedheaders.insecure=false
 
     ports:
       - "80:80"
-
       - "443:443"
       # removed 8080:8080 (dashboard will be routed + protected)
 
+    environment:
+      # Cloudflare API token for DNS-01 challenge
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
 
     volumes:
-
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /home/tim/stacks/gateway/dynamic:/etc/traefik/dynamic:ro
+
+      # Keep your existing certs mount (still fine; can be used for fallback/defaults)
       - /home/tim/stacks/gateway/certs:/etc/traefik/certs:ro
 
+      # ACME storage (Let's Encrypt)
+      - /home/tim/stacks/gateway/acme:/etc/traefik/acme
 
     networks:
       - proxy
@@ -43,19 +75,29 @@ services:
       - traefik.enable=true
       - traefik.docker.network=proxy
 
-      - traefik.http.routers.traefik.rule=Host(`traefik.${BASE_DOMAIN}`)
-      - traefik.http.routers.traefik.entrypoints=web
-      - traefik.http.routers.traefik.service=api@internal
+      # HTTP router (will redirect to HTTPS because of entrypoint redirect)
+      #- traefik.http.routers.traefik.rule=Host(`traefik.${BASE_DOMAIN}`)
+      #- traefik.http.routers.traefik.entrypoints=web
+      #- traefik.http.routers.traefik.service=api@internal
+      #- traefik.http.routers.traefik.middlewares=lan-only@file
 
-      #- traefik.http.middlewares.dash-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH}
-      #- traefik.http.routers.traefik.middlewares=dash-allowlist@file,dash-auth
+      # HTTPS router (requests wildcard cert + serves dashboard securely)
+      - traefik.http.routers.traefik-secure.rule=Host(`traefik.${BASE_DOMAIN}`) 
+      - traefik.http.routers.traefik-secure.service=api@internal
+      - traefik.http.routers.traefik-secure.middlewares=lan-only@file
+      #https  
+      - traefik.http.routers.traefik-secure.entrypoints=websecure
+      - traefik.http.routers.traefik-secure.tls.certresolver=cloudflare
+      - traefik.http.routers.traefik-secure.tls=true
 
+      #password-authentik
+      - traefik.http.routers.traefik-secure.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
 
-      # LAN-only protection via file-provider middleware (gateway/dynamic/shared.yml)
+      # Force wildcard certificate request
+      - traefik.http.routers.traefik-secure.tls.domains[0].main=${BASE_DOMAIN}
+      - traefik.http.routers.traefik-secure.tls.domains[0].sans=*.${BASE_DOMAIN}
 
-      - traefik.http.routers.traefik.middlewares=lan-only@file
-
-
+     
 
 networks:
   proxy:

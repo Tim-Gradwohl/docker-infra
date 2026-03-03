@@ -23,8 +23,17 @@ services:
 
       # Router: ONLY local hostname (no public myfritz host here)
       - traefik.http.routers.adguard.rule=Host(`adguard.${BASE_DOMAIN}`)
-      - traefik.http.routers.adguard.entrypoints=web
-  
+
+      # http  
+      #- traefik.http.routers.adguard.entrypoints=web
+      # https
+      - traefik.http.routers.adguard.entrypoints=websecure
+      - traefik.http.routers.adguard.tls=true
+      - traefik.http.routers.adguard.tls.certresolver=cloudflare
+    
+      #authentik password secure
+      - traefik.http.routers.adguard.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+
       # LAN-only protection (CHANGE THIS SUBNET if yours differs)
       #- "traefik.http.middlewares.adguard-lanonly.ipallowlist.sourcerange=192.168.178.0/24,10.0.0.0/8,172.16.0.0/12"
       - "traefik.http.middlewares.adguard-lanonly.ipallowlist.sourcerange=192.168.188.0/24,10.0.0.0/8,172.16.0.0/12"

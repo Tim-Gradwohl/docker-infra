@@ -33,13 +33,6 @@ services:
       AUTHENTIK_POSTGRESQL__USER: authentik
       AUTHENTIK_POSTGRESQL__NAME: authentik
       AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:?set in shared/.env.secrets}
-
-      AUTHENTIK_HOST: https://auth.${BASE_DOMAIN}
-      AUTHENTIK_HOST_BROWSER: https://auth.${BASE_DOMAIN}
-      AUTHENTIK_LISTEN__HTTP: 0.0.0.0:9000
-      AUTHENTIK_LISTEN__HTTPS: 0.0.0.0:9443
-      AUTHENTIK_DISABLE_STARTUP_ANALYTICS: "true"
-
     depends_on:
       - authentik-postgres
       - authentik-redis
@@ -52,14 +45,7 @@ services:
       - traefik.enable=true
       - traefik.docker.network=proxy
       - traefik.http.routers.authentik.rule=Host(`auth.${BASE_DOMAIN}`)
-      #http
-      #- traefik.http.routers.authentik.entrypoints=web
-      #https
-      - traefik.http.routers.authentik.entrypoints=websecure  
-      - traefik.http.routers.authentik.tls=true  
-      - traefik.http.routers.authentik.tls.certresolver=cloudflare
-
-
+      - traefik.http.routers.authentik.entrypoints=web
       - traefik.http.services.authentik.loadbalancer.server.port=9000
       # IMPORTANT: do NOT protect authentik with authentik forwardAuth (bootstrapping)
 
@@ -75,14 +61,6 @@ services:
       AUTHENTIK_POSTGRESQL__USER: authentik
       AUTHENTIK_POSTGRESQL__NAME: authentik
       AUTHENTIK_POSTGRESQL__PASSWORD: ${AUTHENTIK_POSTGRES_PASSWORD:?set in shared/.env.secrets}
-      
-      AUTHENTIK_HOST: https://auth.${BASE_DOMAIN}
-      AUTHENTIK_HOST_BROWSER: https://auth.${BASE_DOMAIN}
-
-      
-      AUTHENTIK_LISTEN__HTTP: 0.0.0.0:9000
-      AUTHENTIK_LISTEN__HTTPS: 0.0.0.0:9443
-      AUTHENTIK_DISABLE_STARTUP_ANALYTICS: "true"
     depends_on:
       - authentik-postgres
       - authentik-redis
@@ -99,28 +77,13 @@ services:
     depends_on:
       - authentik-server
     environment:
-      # Internal API URL (Docker-only) ✅
+      # This will be used after you create the outpost token in the UI (Step 3/4)
       AUTHENTIK_HOST: http://authentik-server:9000
-
-      # Public URL the browser can reach ✅ (THIS IS THE FIX)
-      AUTHENTIK_HOST_BROWSER: https://auth.${BASE_DOMAIN}
-
       AUTHENTIK_INSECURE: "true"
       AUTHENTIK_TOKEN: ${AUTHENTIK_OUTPOST_TOKEN:-}
     networks:
       - internal
       - proxy
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=proxy
-
-      # ✅ Route ONLY the outpost paths on auth.<domain> to authentik_proxy
-      - traefik.http.routers.authentik-outpost.rule=Host(`auth.${BASE_DOMAIN}`) && PathPrefix(`/outpost.goauthentik.io/`)
-      - traefik.http.routers.authentik-outpost.entrypoints=websecure
-      - traefik.http.routers.authentik-outpost.tls=true
-      - traefik.http.routers.authentik-outpost.priority=200
-      - traefik.http.services.authentik-outpost.loadbalancer.server.port=9000
-
 
 volumes:
   authentik_pgdata:

@@ -26,9 +26,20 @@ services:
       - traefik.docker.network=proxy
 
       # Web UI (8384) routed via Traefik (no host port published for UI)
-      - traefik.http.routers.syncthing.rule=Host(`syncthing.${BASE_DOMAIN}`)
-      - traefik.http.routers.syncthing.entrypoints=web
       - traefik.http.services.syncthing.loadbalancer.server.port=8384
+
+      # Router
+      - traefik.http.routers.syncthing.rule=Host(`syncthing.${BASE_DOMAIN}`)           
+      # http  
+      # - traefik.http.routers.syncthing.entrypoints=web
+      # https
+      - traefik.http.routers.syncthing.entrypoints=websecure
+      - traefik.http.routers.syncthing.tls=true
+      - traefik.http.routers.syncthing.tls.certresolver=cloudflare
+
+      #authentik password secure
+      - traefik.http.routers.syncthing.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+
 
       # Optional (recommended): LAN-only access like your dashboard model.
       # This assumes you already have (or will add) an allowlist middleware in file provider.

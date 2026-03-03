@@ -22,8 +22,9 @@ STACKS[transkun]="${ROOT}/apps/transkun/compose.yml"
 STACKS[yt2midi]="${ROOT}/apps/yt2midi/compose.yml"
 STACKS[yt2midi_v2]="${ROOT}/apps/yt2midi_v2/compose.yml"
 STACKS[authentik]="${ROOT}/apps/authentik/compose.yml"
+STACKS[cloudflared]="${ROOT}/apps/cloudflared/compose.yml"
 # Which stacks require secrets at deploy-time (for interpolation + fail-fast guards)
-REQUIRES_SECRETS_REGEX='^(authentik|gateway|immich|qbittorrentvpn|generate_piawg)$'
+REQUIRES_SECRETS_REGEX='^(cloudflared|authentik|gateway|immich|qbittorrentvpn|generate_piawg)$'
 
 usage() {
   cat <<USAGE

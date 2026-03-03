@@ -21,11 +21,22 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-
-      - traefik.http.routers.ytptube.rule=Host(`ytptube.${BASE_DOMAIN}`)
-      - traefik.http.routers.ytptube.entrypoints=web
       - traefik.http.routers.ytptube.service=ytptube
       - traefik.http.services.ytptube.loadbalancer.server.port=8081
+
+
+ #Router
+      - traefik.http.routers.ytptube.rule=Host(`ytptube.${BASE_DOMAIN}`)  
+      #http  
+      #- traefik.http.routers.ytptube.entrypoints=web
+      #https
+      - traefik.http.routers.ytptube.entrypoints=websecure
+      - traefik.http.routers.ytptube.tls=true
+      - traefik.http.routers.ytptube.tls.certresolver=cloudflare
+
+      #authentik password secure
+      - traefik.http.routers.ytptube.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+
 
       # Optional hardening if you want LAN-only access while WAN :80 is forwarded:
       # - traefik.http.routers.ytptube.middlewares=lan-allowlist@file

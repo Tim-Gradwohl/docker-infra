@@ -34,8 +34,18 @@ services:
 
       # Router
       - traefik.http.routers.gitea.rule=Host(`gitea.${BASE_DOMAIN}`)
-      - traefik.http.routers.gitea.entrypoints=web
       - traefik.http.routers.gitea.service=gitea
+      
+      # http  
+      #- traefik.http.routers.gitea.entrypoints=web
+      # https
+      - traefik.http.routers.gitea.entrypoints=websecure
+      - traefik.http.routers.gitea.tls=true
+      - traefik.http.routers.gitea.tls.certresolver=cloudflare
+    
+      #authentik password secure
+      - traefik.http.routers.gitea.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+
 
       # Service -> container port
       - traefik.http.services.gitea.loadbalancer.server.port=3000

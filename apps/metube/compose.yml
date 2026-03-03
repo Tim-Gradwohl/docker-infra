@@ -22,12 +22,18 @@ services:
 
       - traefik.enable=true
       - traefik.docker.network=proxy
-
       - traefik.http.routers.metube.rule=Host(`metube.${BASE_DOMAIN}`)
-      - traefik.http.routers.metube.entrypoints=web
+      #http
+      #- traefik.http.routers.metube.entrypoints=web
+      #https
+      - traefik.http.routers.metube.entrypoints=websecure  
+      - traefik.http.routers.metube.tls=true  
+      - traefik.http.routers.metube.tls.certresolver=cloudflare
+
+
       - traefik.http.routers.metube.service=metube
       - traefik.http.services.metube.loadbalancer.server.port=8081
-
+      - traefik.http.routers.metube.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
 
       # OPTIONAL (recommended): restrict UI to LAN like your Traefik dashboard
       # If you already have an ipAllowList middleware in file-provider, reuse it here:

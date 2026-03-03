@@ -19,9 +19,23 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-      - traefik.http.routers.yt2midi-v2.rule=Host(`yt2midi-v2.${BASE_DOMAIN}`)
-      - traefik.http.routers.yt2midi-v2.entrypoints=web
       - traefik.http.services.yt2midi-v2.loadbalancer.server.port=8000
+
+      
+       #Router
+      - traefik.http.routers.yt2midi-v2.rule=Host(`yt2midi-v2.${BASE_DOMAIN}`)   
+      #http  
+      #- traefik.http.routers.yt2midi-v2.entrypoints=web
+      #https
+      - traefik.http.routers.yt2midi-v2.entrypoints=websecure
+      - traefik.http.routers.yt2midi-v2.tls=true
+      - traefik.http.routers.yt2midi-v2.tls.certresolver=cloudflare
+
+      #authentik password secure
+      - traefik.http.routers.yt2midi-v2.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+
+
+
 
 networks:
   internal:

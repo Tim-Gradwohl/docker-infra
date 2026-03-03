@@ -19,9 +19,22 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-      - traefik.http.routers.yt2midi.rule=Host(`yt2midi.${BASE_DOMAIN}`)
-      - traefik.http.routers.yt2midi.entrypoints=web
       - traefik.http.services.yt2midi.loadbalancer.server.port=8000
+      
+      #Router
+      - traefik.http.routers.yt2midi.rule=Host(`yt2midi.${BASE_DOMAIN}`)      
+      #http  
+      #- traefik.http.routers.yt2midi.entrypoints=web
+      #https
+      - traefik.http.routers.yt2midi.entrypoints=websecure
+      - traefik.http.routers.yt2midi.tls=true
+      - traefik.http.routers.yt2midi.tls.certresolver=cloudflare
+
+      #authentik password secure
+      - traefik.http.routers.yt2midi.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+
+
+
       # OPTIONAL hardening (enable if you have a LAN allowlist middleware defined in Traefik file provider):
       # - traefik.http.routers.yt2midi.middlewares=lan-allowlist@file
 

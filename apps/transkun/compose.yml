@@ -32,9 +32,21 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-      - traefik.http.routers.transkun.rule=Host(`transkun.${BASE_DOMAIN}`)
-      - traefik.http.routers.transkun.entrypoints=web
       - traefik.http.services.transkun.loadbalancer.server.port=8000
+
+
+      #Router
+      - traefik.http.routers.transkun.rule=Host(`transkun.${BASE_DOMAIN}`)        
+      #http  
+      #- traefik.http.routers.transkun.entrypoints=web
+      #https
+      - traefik.http.routers.transkun.entrypoints=websecure
+      - traefik.http.routers.transkun.tls=true
+      - traefik.http.routers.transkun.tls.certresolver=cloudflare
+
+      #authentik password secure
+      - traefik.http.routers.transkun.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+
 
       # OPTIONAL hardening (enable if you have a LAN allowlist middleware defined in Traefik file provider):
       # - traefik.http.routers.transkun.middlewares=lan-allowlist@file

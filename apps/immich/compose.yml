@@ -36,11 +36,11 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-
+      - traefik.http.services.immich.loadbalancer.server.port=2283
       # Internal access (LAN)
-      - traefik.http.routers.photos-lan.rule=Host(`photos.${BASE_DOMAIN}`)
-      - traefik.http.routers.photos-lan.entrypoints=web
-      - traefik.http.routers.photos-lan.service=immich
+      #- traefik.http.routers.photos-lan.rule=Host(`photos.${BASE_DOMAIN}`)
+      #- traefik.http.routers.photos-lan.entrypoints=web
+      #- traefik.http.routers.photos-lan.service=immich
       # optional but recommended:
       # - traefik.http.routers.photos-lan.middlewares=lan-only@docker
 
@@ -49,7 +49,20 @@ services:
       # - traefik.http.routers.photos-public.entrypoints=web
       # - traefik.http.routers.photos-public.service=immich
 
-      - traefik.http.services.immich.loadbalancer.server.port=2283
+
+        # Router
+      - traefik.http.routers.immich.rule=Host(`photos.${BASE_DOMAIN}`)
+      - traefik.http.routers.immich.service=immich
+      
+      # http  
+      #- traefik.http.routers.immich.entrypoints=web
+      # https
+      - traefik.http.routers.immich.entrypoints=websecure
+      - traefik.http.routers.immich.tls=true
+      - traefik.http.routers.immich.tls.certresolver=cloudflare
+
+      #authentik password secure
+      - traefik.http.routers.immich.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
 
 
 
