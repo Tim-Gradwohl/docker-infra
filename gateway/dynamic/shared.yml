@@ -1,15 +1,14 @@
 http:
   middlewares:
+
     lan-only:
       ipAllowList:
         sourceRange:
-          - "192.168.188.0/24"   # your LAN
-          - "172.16.0.0/12"      # Docker/WSL private ranges
-          - "192.168.0.0/16"     # Docker Desktop NAT (e.g. 192.168.65.0/24)
+          - 192.168.188.0/24
+          - 172.16.0.0/12
+          - 192.168.0.0/16
 
     ak-https:
       headers:
-        customRequestHeaders:
-          X-Forwarded-Proto: "https"
-          X-Forwarded-Port: "443"
-          X-Forwarded-Ssl: "on"
+        sslProxyHeaders:
+          X-Forwarded-Proto: https
