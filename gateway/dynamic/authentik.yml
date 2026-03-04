@@ -9,7 +9,6 @@ http:
     authentik-forwardauth:
       forwardAuth:
         address: "http://authentik_proxy:9000/outpost.goauthentik.io/auth/traefik"
-        # address: "https://auth.timopoly.com/outpost.goauthentik.io/auth/traefik"
         trustForwardHeader: true
         authResponseHeaders:
           - X-authentik-username
@@ -23,8 +22,8 @@ http:
         status:
           - "401-403"
         service: authentik-outpost
-        #query: "/outpost.goauthentik.io/start?rd={url}"
         query: "https://auth.${BASE_DOMAIN}/outpost.goauthentik.io/start?rd={url}"
+
     authentik-chain:
       chain:
         middlewares:
