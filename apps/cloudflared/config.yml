@@ -1,4 +1,4 @@
-tunnel: 5ac248ab-ed34-4bfa-b904-3210c5871314
+tunnel: 5618b03c-abe5-4504-ab37-a3e2f4c70820
 credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
@@ -6,20 +6,18 @@ ingress:
     service: https://gateway_traefik:443
     originRequest:
       originServerName: auth.timopoly.com
-      # With a public LE cert this can stay TRUE (default), but explicit is nice:
-      noTLSVerify: false
+      httpHostHeader: auth.timopoly.com
+      noTLSVerify: true
+      headers:
+        X-Forwarded-Proto: "https"
 
   - hostname: iptv.timopoly.com
     service: https://gateway_traefik:443
     originRequest:
       originServerName: iptv.timopoly.com
-      noTLSVerify: false
-
-  # add more apps like this:
-  # - hostname: metube.timopoly.com
-  #   service: https://gateway_traefik:443
-  #   originRequest:
-  #     originServerName: metube.timopoly.com
-  #     noTLSVerify: false
+      httpHostHeader: iptv.timopoly.com
+      noTLSVerify: true
+      headers:
+        X-Forwarded-Proto: "https"
 
   - service: http_status:404

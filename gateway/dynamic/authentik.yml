@@ -28,5 +28,6 @@ http:
     authentik-chain:
       chain:
         middlewares:
+          - ak-https
           - authentik-forwardauth
           - authentik-errors

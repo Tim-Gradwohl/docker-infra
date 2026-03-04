@@ -3,16 +3,26 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: unless-stopped
-    command: tunnel --no-autoupdate run
-    environment:
-      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+
+    # config-file ingress mode
+    command: tunnel --config /etc/cloudflared/config.yml run
+
+    # token mode is NOT used with config-file ingress
+    # environment:
+    #   TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+
     networks:
       - proxy
+
     security_opt:
       - no-new-privileges:true
     read_only: true
     cap_drop:
       - ALL
+
+    volumes:
+      - /home/tim/stacks/apps/cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+      - /home/tim/stacks/apps/cloudflared/credentials.json:/etc/cloudflared/credentials.json:ro
 
 networks:
   proxy:
