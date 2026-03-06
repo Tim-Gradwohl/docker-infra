@@ -1,0 +1,109 @@
+/* App-specific tweaks layered on top of timopoly-ui.css */
+:root{
+  --accent: rgba(82,120,255,.85);
+  --good: rgba(110,231,183,.85);
+  --warn: rgba(251,191,36,.9);
+  --bad: rgba(248,113,113,.9);
+}
+
+.container { display:flex; justify-content:center; }
+.panel { border:1px solid var(--border); background:linear-gradient(180deg,var(--card),var(--card2));
+  border-radius: var(--r); box-shadow: var(--shadow); backdrop-filter: blur(10px); overflow:hidden;
+}
+.panel-body { padding: 16px; }
+@media(min-width:680px){ .panel-body{ padding: 18px; } }
+@media(min-width:980px){ .panel-body{ padding: 20px; } }
+
+.form-grid{ display:grid; gap:12px; }
+@media(min-width:680px){
+  .form-grid{ grid-template-columns: 1fr auto; align-items:end; }
+  .form-grid .full{ grid-column:1/-1; }
+}
+
+label{ font-size:13px; color: var(--muted); display:block; margin-bottom:6px; }
+input[type="url"], select{
+  width:100%; border:1px solid var(--border); background: rgba(255,255,255,.03);
+  color: var(--text); border-radius: 12px; padding: 12px 12px; font-size: 15px;
+  outline:none;
+}
+@media (prefers-color-scheme: light){
+  input[type="url"], select{ background: rgba(0,0,0,.03); }
+}
+input[type="url"]::placeholder{ color: var(--muted); }
+input[type="url"]:focus, select:focus{
+  border-color: rgba(82,120,255,.55);
+  box-shadow: 0 0 0 3px rgba(82,120,255,.18);
+}
+
+.btn{
+  border:1px solid rgba(82,120,255,.35);
+  background: linear-gradient(180deg, rgba(82,120,255,.28), rgba(82,120,255,.16));
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 650;
+  cursor:pointer;
+  transition: transform 120ms ease, filter 120ms ease;
+  min-height: 44px; /* touch target */
+}
+.btn:hover{ transform: translateY(-1px); filter: brightness(1.05); }
+.btn:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+
+.row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.small{ font-size:12.5px; color: var(--muted); line-height:1.45; }
+.mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+.status{
+  margin-top: 14px;
+  border:1px solid var(--border);
+  background: rgba(255,255,255,.03);
+  border-radius: 14px;
+  padding: 12px 12px;
+}
+@media (prefers-color-scheme: light){
+  .status{ background: rgba(0,0,0,.03); }
+}
+.status h2{ margin: 0 0 8px; font-size: 14px; letter-spacing:-.01em; }
+.status .msg{ margin: 0; font-size: 13px; color: var(--muted); }
+
+.progress-wrap{ margin-top: 10px; display:flex; gap:10px; align-items:center; }
+.progress{
+  position:relative; height: 12px; flex: 1;
+  border-radius: 999px; overflow:hidden;
+  border:1px solid var(--border);
+  background: rgba(255,255,255,.05);
+}
+@media (prefers-color-scheme: light){
+  .progress{ background: rgba(0,0,0,.05); }
+}
+.progress > .bar{
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, rgba(82,120,255,.2), rgba(110,231,183,.35), rgba(82,120,255,.2));
+  transition: width 180ms ease;
+}
+.progress.indeterminate > .bar{
+  width: 35%;
+  position:absolute;
+  animation: indet 1.1s infinite linear;
+}
+@keyframes indet{
+  0%{ left:-35%; }
+  100%{ left:100%; }
+}
+
+.badge2{
+  border:1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space:nowrap;
+}
+
+.links a{ color: var(--text); text-decoration: none; border-bottom: 1px dashed rgba(82,120,255,.55); }
+.links a:hover{ border-bottom-style: solid; }
+
+.error{ border-color: rgba(248,113,113,.35); }
+.ok{ border-color: rgba(110,231,183,.35); }

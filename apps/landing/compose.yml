@@ -1,0 +1,25 @@
+services:
+  landing:
+    image: nginx:alpine
+    container_name: landing
+    restart: unless-stopped
+    networks:
+      - proxy
+
+    volumes:
+      - /home/tim/stacks/apps/landing/site/index.html:/usr/share/nginx/html/index.html:ro
+      - /home/tim/stacks/apps/landing/site/services.json:/usr/share/nginx/html/services.json:ro
+      - /home/tim/stacks/apps/landing/site/timopoly-ui.css:/usr/share/nginx/html/timopoly-ui.css:ro
+
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.landing.rule=Host(`www.timopoly.com`)
+      - traefik.http.routers.landing.entrypoints=websecure
+      - traefik.http.routers.landing.tls=true
+      - traefik.http.services.landing.loadbalancer.server.port=80
+      - traefik.http.routers.landing.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+
+networks:
+  proxy:
+    external: true

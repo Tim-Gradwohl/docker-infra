@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <title>timopoly.com</title>
+  <meta name="description" content="Public services on timopoly.com" />
+    <link rel="stylesheet" href="/timopoly-ui.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1 id="title">timopoly.com</h1>
+        <p class="subtitle" id="subtitle">Public services</p>
+      </div>
+      <label class="pill" aria-label="Search services">
+        <span aria-hidden="true">🔎</span>
+        <input id="q" class="search" type="search" placeholder="Search (e.g. photos, iptv…)" autocomplete="off" />
+      </label>
+    </header>
+
+    <section class="grid" id="grid"></section>
+
+    <p class="hint">Tip: press <span class="kbd">/</span> to focus search on desktop.</p>
+
+    <footer>
+      <div>© <span id="year"></span> timopoly</div>
+      <div id="count"></div>
+    </footer>
+  </main>
+
+<script>
+  const q = document.getElementById('q');
+  const grid = document.getElementById('grid');
+  const count = document.getElementById('count');
+
+  let cards = [];
+
+  function applyFilter() {
+    const term = (q.value || '').trim().toLowerCase();
+    let visible = 0;
+
+    for (const c of cards) {
+      const hay = (c.dataset.hay || '');
+      const show = !term || hay.includes(term);
+      c.style.display = show ? '' : 'none';
+      if (show) visible++;
+    }
+    count.textContent = `${visible} / ${cards.length} visible`;
+  }
+
+  async function load() {
+    const res = await fetch('/services.json', { cache: 'no-store' });
+    const data = await res.json();
+
+    document.title = (data.title ? `${data.title} — Services` : 'timopoly.com');
+    document.getElementById('title').textContent = data.title || 'timopoly.com';
+    document.getElementById('subtitle').textContent = data.subtitle || 'Public services';
+
+    grid.innerHTML = '';
+    cards = [];
+
+    for (const s of (data.services || [])) {
+      const host = (s.url || '').replace(/^https?:\/\//, '').replace(/\/+$/, '');
+
+      const card = document.createElement('article');
+      card.className = 'card';
+
+      const a = document.createElement('a');
+      a.className = 'cardlink';
+      a.href = s.url;
+      a.rel = 'noopener';
+
+      const top = document.createElement('div');
+      top.className = 'top';
+
+      const left = document.createElement('div');
+      const name = document.createElement('p');
+      name.className = 'name';
+      name.textContent = s.name || host;
+
+      const desc = document.createElement('p');
+      desc.className = 'desc';
+      desc.textContent = s.desc || '';
+
+      left.appendChild(name);
+      left.appendChild(desc);
+
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = s.tag || 'Service';
+
+      top.appendChild(left);
+      top.appendChild(badge);
+
+      const url = document.createElement('div');
+      url.className = 'url';
+      url.textContent = host;
+
+      a.appendChild(top);
+      a.appendChild(url);
+      card.appendChild(a);
+
+      const hay = `${s.name||''} ${s.desc||''} ${s.tag||''} ${host}`.toLowerCase();
+      card.dataset.hay = hay;
+
+      grid.appendChild(card);
+      cards.push(card);
+    }
+
+    applyFilter();
+  }
+
+  q.addEventListener('input', applyFilter);
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement !== q) { e.preventDefault(); q.focus(); }
+    if (e.key === 'Escape' && document.activeElement === q) { q.value=''; applyFilter(); q.blur(); }
+  });
+
+  load().catch(() => {
+    grid.innerHTML = '<article class="card"><div style="padding:18px">Could not load services.json</div></article>';
+  });
+</script>
+</body>
+</html>

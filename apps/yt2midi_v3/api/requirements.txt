@@ -1,0 +1,6 @@
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+pydantic==2.6.4
+yt-dlp>=2025.01.01
+python-multipart==0.0.9
+transkun

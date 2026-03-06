@@ -1,0 +1,53 @@
+name: yt2midi_v3
+
+services:
+  ui:
+    build:
+      context: /home/tim/stacks/apps/yt2midi_v3
+      dockerfile: /home/tim/stacks/apps/yt2midi_v3/docker/nginx/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+
+    networks:
+      - internal
+      - proxy
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      - "traefik.http.routers.yt2midi_v3.rule=Host(`yt2midi-v3.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.yt2midi_v3.entrypoints=websecure"
+      - "traefik.http.routers.yt2midi_v3.tls=true"
+      - "traefik.http.routers.yt2midi_v3.tls.certresolver=cloudflare"
+      - "traefik.http.routers.yt2midi_v3.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}"
+
+      - "traefik.http.services.yt2midi_v3.loadbalancer.server.port=80"
+
+  api:
+    build:
+      context: /home/tim/stacks/apps/yt2midi_v3/api
+      dockerfile: /home/tim/stacks/apps/yt2midi_v3/api/Dockerfile
+    restart: unless-stopped
+
+    # Leave GPU enabled only if you have NVIDIA Container Toolkit.
+    # If pulls keep failing and you want to test quickly, comment this out.
+    gpus: all
+
+    environment:
+      - "TZ=Europe/Berlin"
+
+    volumes:
+      - /home/tim/stacks/apps/yt2midi_v3/data/in:/data/in:rw
+      - /home/tim/stacks/apps/yt2midi_v3/data/out:/data/out:rw
+
+    networks:
+      - internal
+      - proxy
+
+networks:
+  internal:
+    driver: bridge
+  proxy:
+    external: true

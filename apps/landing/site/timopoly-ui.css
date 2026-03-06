@@ -1,0 +1,50 @@
+/* TIMOPOLY UI Stylesheet (extracted from landing page)
+   Reusable CSS for TIMOPOLY web UIs.
+*/
+
+:root{
+      --bg:#0b0f16; --card:rgba(255,255,255,.06); --card2:rgba(255,255,255,.08);
+      --text:rgba(255,255,255,.92); --muted:rgba(255,255,255,.62); --border:rgba(255,255,255,.12);
+      --shadow:0 10px 30px rgba(0,0,0,.35); --r:18px; --max:1040px;
+    }
+    @media (prefers-color-scheme: light){
+      :root{--bg:#f6f7fb;--card:rgba(0,0,0,.04);--card2:rgba(0,0,0,.06);--text:rgba(0,0,0,.88);
+        --muted:rgba(0,0,0,.56);--border:rgba(0,0,0,.12);--shadow:0 10px 30px rgba(0,0,0,.10);}
+    }
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      color:var(--text); background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(82,120,255,.22), transparent 55%),
+        radial-gradient(900px 600px at 80% 20%, rgba(110,231,183,.16), transparent 50%),
+        radial-gradient(900px 700px at 40% 90%, rgba(244,114,182,.14), transparent 55%),
+        var(--bg);
+      display:flex; justify-content:center; padding:22px 14px 34px;
+    }
+    main{width:100%; max-width:var(--max)}
+    header{display:flex; gap:14px; align-items:flex-start; justify-content:space-between; padding:8px 4px 18px}
+    h1{margin:0; font-size:clamp(22px,3vw,34px); letter-spacing:-.02em; line-height:1.1}
+    .subtitle{margin:6px 0 0; color:var(--muted); font-size:14px; line-height:1.35}
+    .pill{border:1px solid var(--border); background:var(--card); border-radius:999px; padding:10px 12px;
+      display:inline-flex; gap:8px; align-items:center; box-shadow:var(--shadow); backdrop-filter:blur(10px)}
+    .search{width:min(360px,52vw); border:0; outline:0; background:transparent; color:var(--text); font-size:14px}
+    .search::placeholder{color:var(--muted)}
+    .grid{display:grid; grid-template-columns:repeat(12,1fr); gap:14px}
+    .card{grid-column:span 12; border:1px solid var(--border);
+      background:linear-gradient(180deg,var(--card),var(--card2)); border-radius:var(--r);
+      box-shadow:var(--shadow); backdrop-filter:blur(10px); overflow:hidden}
+    @media(min-width:680px){.card{grid-column:span 6}}
+    @media(min-width:980px){.card{grid-column:span 4}}
+    a.cardlink{display:grid; gap:10px; padding:18px; color:inherit; text-decoration:none; min-height:124px}
+    .top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
+    .name{font-weight:700; font-size:18px; margin:0; line-height:1.15}
+    .desc{margin:0; color:var(--muted); font-size:13px; line-height:1.35}
+    .url{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12.5px; color:var(--muted); word-break:break-word}
+    .badge{border:1px solid var(--border); background:rgba(255,255,255,.06); padding:7px 10px; border-radius:999px;
+      font-size:12px; color:var(--muted); white-space:nowrap}
+    @media (prefers-color-scheme: light){.badge{background:rgba(0,0,0,.04)}}
+    footer{margin-top:18px; display:flex; justify-content:space-between; align-items:center; gap:10px;
+      color:var(--muted); font-size:12.5px; padding:8px 4px}
+    .hint{margin:16px 4px 0; color:var(--muted); font-size:12.5px; line-height:1.45}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; border:1px solid var(--border);
+      background:rgba(255,255,255,.05); padding:2px 7px; border-radius:8px; color:var(--text)}
+    a.cardlink:focus-visible{outline:3px solid rgba(82,120,255,.6); outline-offset:2px; border-radius:var(--r)}
+    .card:hover{transform:translateY(-1px); transition:transform 120ms ease}

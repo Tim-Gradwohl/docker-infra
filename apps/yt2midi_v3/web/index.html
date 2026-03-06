@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>yt2midi — YouTube → MP3 + MIDI</title>
+  <link rel="stylesheet" href="/css/timopoly-ui.css" />
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>yt2midi</h1>
+      <p class="subtitle">Convert a YouTube link into an MP3 and a MIDI file (Transkun). Works on phone & desktop.</p>
+    </div>
+    <div class="pill" aria-label="Quick hint">
+      <span class="kbd">/api</span>
+      <input class="search" value="Runs in Docker • UI served by Nginx • API by FastAPI" readonly />
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="card" style="grid-column: span 12;">
+      <div class="panel-body">
+        <form id="form" class="form-grid">
+          <div class="full">
+            <label for="url">YouTube URL</label>
+            <input id="url" name="url" type="url" inputmode="url"
+              placeholder="https://www.youtube.com/watch?v=..." required />
+          </div>
+
+          <div>
+            <label for="device">Device</label>
+            <select id="device" name="device">
+              <option value="cuda" selected>cuda (GPU)</option>
+              <option value="cpu">cpu</option>
+            </select>
+            <div class="small" style="margin-top:6px;">
+              Tip: use <span class="mono">cpu</span> if you don't have an NVIDIA GPU.
+            </div>
+          </div>
+
+          <div>
+            <button id="submitBtn" class="btn" type="submit">Generate MP3 + MIDI</button>
+            <div class="small" style="margin-top:6px;">Keep this tab open to see progress.</div>
+          </div>
+        </form>
+
+        <div id="status" class="status" hidden>
+          <div class="row" style="justify-content:space-between;">
+            <h2 id="statusTitle">Working…</h2>
+            <span id="statusBadge" class="badge2">Queued</span>
+          </div>
+
+          <p id="statusMsg" class="msg">Starting…</p>
+
+          <div class="progress-wrap">
+            <div id="progress" class="progress indeterminate" role="progressbar"
+              aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+              aria-label="Conversion progress">
+              <div class="bar"></div>
+            </div>
+            <div id="pct" class="badge2">0%</div>
+          </div>
+
+          <div id="result" class="links" style="margin-top:10px;"></div>
+          <details id="logWrap" style="margin-top:10px;" hidden>
+            <summary class="small">Show logs</summary>
+            <pre id="logs" style="white-space:pre-wrap; font-size:12px; margin:10px 0 0;"></pre>
+          </details>
+        </div>
+
+        <p class="hint" style="margin:14px 4px 0;">
+          Files are stored under <span class="mono">/data/out/&lt;job-id&gt;/</span> (bind-mounted by Docker),
+          so you can re-download later.
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <span>© TIMOPOLY • yt2midi</span>
+    <span class="small">UI optimized for touch (44px targets) + desktop</span>
+  </footer>
+</main>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

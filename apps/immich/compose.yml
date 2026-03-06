@@ -62,7 +62,7 @@ services:
       - traefik.http.routers.immich.tls.certresolver=cloudflare
 
       #authentik password secure
-      - traefik.http.routers.immich.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+      #- traefik.http.routers.immich.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
 
 
 
