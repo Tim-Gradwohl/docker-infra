@@ -42,6 +42,14 @@ Rules:
 * Cross-cutting documentation belongs in `docs/`
 * AI context is provided via `ai-context.md`
 
+### Context expansion
+
+If additional context is required:
+
+1. Use ai-context.md to identify relevant files
+2. Request those files explicitly
+3. Do NOT assume behavior not supported by provided files
+
 ---
 
 ## DEPLOYMENT RULES
@@ -365,6 +373,17 @@ stackbackup
 * Do not skip env files
 * Do not modify unrelated stacks
 * Do not assume system state without verification
+
+---
+
+## Repository access
+
+The repository is available at:
+https://github.com/Tim-Gradwohl/docker-infra
+
+If additional context is required:
+- request specific files
+- do not assume unseen content
 
 ---
 

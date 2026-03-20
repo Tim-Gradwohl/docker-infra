@@ -1,5 +1,15 @@
 # AI CONTEXT — TIMOPOLY DOCKER STACK
 
+## REPOSITORY
+
+Primary repository:
+https://github.com/Tim-Gradwohl/docker-infra
+
+Use this repository as the source of truth.
+If additional context is required, request specific files.
+
+---
+
 ## SYSTEM OVERVIEW
 
 Single-host homelab infrastructure running on:
@@ -331,3 +341,33 @@ Only Traefik is reachable from WAN.
 * Stack-specific → `apps/<stack>/README.md`
 * Incidents → `docs/incidents/`
 
+---
+
+## REPOSITORY MAP
+
+### Core files
+- AGENTS.md → rules for agents
+- ai-context.md → system overview
+- CHANGELOG.md → change history
+
+### Architecture
+- docs/architecture/
+  - overview.md
+  - networking.md
+  - ingress-cloudflare-traefik.md
+  - authentik.md
+
+### Runbooks
+- docs/runbooks/
+  - qbittorrentvpn-recovery.md
+  - traefik-debug.md
+  - authentik-debug.md
+
+### Stacks
+- gateway/README.md → Traefik + ingress
+- apps/cloudflared/README.md → Cloudflare Tunnel
+- apps/adguardhome/README.md → DNS
+- apps/qbittorrentvpn/README.md → VPN stack
+- apps/immich/README.md → photo service
+- apps/metube/README.md → yt-dlp UI
+- apps/yt2midi_v3/README.md → GPU pipeline
