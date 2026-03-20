@@ -1,0 +1,11 @@
+{
+  "title": "TIMOPOLY",
+  "subtitle": "Public services",
+  "services": [
+    { "name": "MeTube",   "url": "https://metube.timopoly.com",  "tag": "Media",    "desc": "yt-dlp web UI" },
+    { "name": "Auth",     "url": "https://auth.timopoly.com",    "tag": "SSO",      "desc": "Login portal" },
+    { "name": "IPTV",     "url": "https://iptv.timopoly.com",    "tag": "Streaming","desc": "IPTV player" },
+    { "name": "Photos",   "url": "https://photos.timopoly.com",  "tag": "Library",  "desc": "Immich photos" },
+    { "name": "YT → MIDI","url": "https://yt2midi-v3.timopoly.com", "tag": "Music",    "desc": "YouTube to MP3 + MIDI" }
+  ]
+}

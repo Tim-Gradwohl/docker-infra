@@ -10,6 +10,18 @@ shared/.env.secrets
 
 
 ############################################
+# Stack runtime state (NEW)
+############################################
+
+state/
+backups/
+recovered_apps/
+
+# Traefik ACME certificates (runtime, contains private keys)
+gateway/acme/
+
+
+############################################
 # General runtime data (never version)
 ############################################
 
@@ -22,7 +34,6 @@ shared/.env.secrets
 **/logs/
 
 **/*.log
-**/*.json
 
 
 ############################################
@@ -38,7 +49,14 @@ apps/qbittorrentvpn/qbittorrent/
 
 # MeTube runtime
 apps/metube/downloads/
-apps/metube/downloads/**
+
+
+############################################
+# WireGuard runtime (IMPORTANT FIX)
+############################################
+
+apps/qbittorrentvpn/wireguard-pia/wg0.conf
+apps/qbittorrentvpn/wireguard-pia/port.dat
 
 
 ############################################
@@ -56,22 +74,22 @@ apps/metube/downloads/**
 # Keep infrastructure code versioned
 ############################################
 
-# Explicitly keep scripts (even if under ignored patterns)
+# Scripts
 !apps/qbittorrentvpn/scripts/
 !apps/qbittorrentvpn/scripts/**
 
-# Keep compose files
+# Compose files
 !**/compose.yml
 
-# Keep stack wrapper
+# Stack tooling
 !stack
 
-# Per-app environment files
+# Per-app env files (non-secret)
 **/.env
-apps/qbittorrentvpn/wireguard-pia/
 
-# transkun runtime
-apps/transkun/data/
 
-# Transkun runtime data
+############################################
+# Transkun runtime
+############################################
+
 apps/transkun/data/
