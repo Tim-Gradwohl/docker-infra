@@ -1,0 +1,172 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT="${HOME}/stacks"
+STATE_DIR="${ROOT}/state/qbittorrentvpn"
+LOCK_DIR="${STATE_DIR}/watchdog.lock"
+COOLDOWN_FILE="${STATE_DIR}/last_refresh_epoch"
+LOG_FILE="${STATE_DIR}/watchdog.log"
+
+STACK="qbittorrentvpn"
+GLUETUN_CONTAINER="qbittorrentvpn_gluetun"
+REFRESH_CMD="${ROOT}/bin/qb-vpn-refresh"
+
+CHECK_IP="${CHECK_IP:-1.1.1.1}"
+CHECK_DNS="${CHECK_DNS:-github.com}"
+
+COOLDOWN_SECONDS="${COOLDOWN_SECONDS:-1800}"   # 30 min
+STABILITY_WAIT="${STABILITY_WAIT:-20}"         # seconds after refresh
+LOG_TAIL_LINES="${LOG_TAIL_LINES:-120}"
+
+log() {
+  local ts
+  ts="$(date '+%Y-%m-%d %H:%M:%S')"
+  mkdir -p "${STATE_DIR}"
+  printf '[%s] %s\n' "${ts}" "$*" | tee -a "${LOG_FILE}"
+}
+
+cleanup() {
+  rmdir "${LOCK_DIR}" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || {
+    log "ERR required command not found: $1"
+    exit 1
+  }
+}
+
+acquire_lock() {
+  mkdir -p "${STATE_DIR}"
+  if ! mkdir "${LOCK_DIR}" 2>/dev/null; then
+    log "INFO another watchdog run is already active; exiting"
+    exit 0
+  fi
+}
+
+cooldown_active() {
+  [[ -f "${COOLDOWN_FILE}" ]] || return 1
+
+  local last now delta
+  last="$(cat "${COOLDOWN_FILE}" 2>/dev/null || echo 0)"
+  now="$(date +%s)"
+  delta=$(( now - last ))
+
+  if (( delta < COOLDOWN_SECONDS )); then
+    log "INFO cooldown active (${delta}s elapsed, need ${COOLDOWN_SECONDS}s)"
+    return 0
+  fi
+
+  return 1
+}
+
+mark_refresh_now() {
+  date +%s > "${COOLDOWN_FILE}"
+}
+
+container_exists() {
+  docker ps -a --format '{{.Names}}' | grep -Fxq "${GLUETUN_CONTAINER}"
+}
+
+container_unhealthy() {
+  local status
+  status="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "${GLUETUN_CONTAINER}" 2>/dev/null || echo missing)"
+  [[ "${status}" == "unhealthy" ]]
+}
+
+raw_ip_fails() {
+  ! docker exec "${GLUETUN_CONTAINER}" ping -c1 "${CHECK_IP}" >/dev/null 2>&1
+}
+
+dns_fails() {
+  ! docker exec "${GLUETUN_CONTAINER}" ping -c1 "${CHECK_DNS}" >/dev/null 2>&1
+}
+
+logs_match_dead_tunnel_pattern() {
+  local logs
+  logs="$(docker logs --tail "${LOG_TAIL_LINES}" "${GLUETUN_CONTAINER}" 2>&1 || true)"
+
+  grep -qi 'i/o timeout' <<<"${logs}" &&
+  grep -qi 'failed to pass the healthcheck' <<<"${logs}" &&
+  grep -qi 'wireguard setup is complete' <<<"${logs}"
+}
+
+verify_recovery() {
+  sleep "${STABILITY_WAIT}"
+
+  if ! container_exists; then
+    log "ERR gluetun container missing after refresh"
+    return 1
+  fi
+
+  if container_unhealthy; then
+    log "ERR gluetun still unhealthy after refresh"
+    return 1
+  fi
+
+  if raw_ip_fails; then
+    log "ERR raw IP connectivity still failing after refresh"
+    return 1
+  fi
+
+  if dns_fails; then
+    log "WARN raw IP works but DNS still failing after refresh"
+  else
+    log "INFO DNS connectivity OK after refresh"
+  fi
+
+  log "INFO recovery verified"
+  return 0
+}
+
+main() {
+  require_cmd docker
+  require_cmd "${REFRESH_CMD}"
+
+  acquire_lock
+
+  if ! container_exists; then
+    log "INFO ${GLUETUN_CONTAINER} not present; nothing to do"
+    exit 0
+  fi
+
+  if ! container_unhealthy; then
+    log "INFO ${GLUETUN_CONTAINER} healthy; nothing to do"
+    exit 0
+  fi
+
+  log "INFO ${GLUETUN_CONTAINER} is unhealthy"
+
+  if ! logs_match_dead_tunnel_pattern; then
+    log "INFO unhealthy, but logs do not match known dead-tunnel pattern; no action taken"
+    exit 0
+  fi
+
+  log "INFO logs match known dead-tunnel pattern"
+
+  if ! raw_ip_fails; then
+    log "INFO raw IP connectivity works despite unhealthy status; no refresh needed"
+    exit 0
+  fi
+
+  log "INFO raw IP connectivity is failing"
+
+  if cooldown_active; then
+    exit 0
+  fi
+
+  log "INFO triggering qb-vpn-refresh"
+  mark_refresh_now
+
+  if "${REFRESH_CMD}"; then
+    log "INFO qb-vpn-refresh completed"
+  else
+    log "ERR qb-vpn-refresh failed"
+    exit 1
+  fi
+
+  verify_recovery
+}
+
+main "$@"

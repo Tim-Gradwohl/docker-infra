@@ -1,0 +1,159 @@
+#qb-vpn-refresh:
+#1. backup
+#2. stop
+#3. remove wg0.conf
+#4. regenerate
+#5. copy
+#6. restart
+
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+STACK="qbittorrentvpn"
+ROOT="${HOME}/stacks"
+STACK_BIN="${ROOT}/bin/stack"
+APP_DIR="${ROOT}/apps/${STACK}"
+WG_DIR="${APP_DIR}/wireguard-pia"
+WG_FILE="${WG_DIR}/wg0.conf"
+SECRETS_FILE="${ROOT}/shared/.env.secrets"
+
+GEN_IMAGE="${PIA_WG_IMAGE:-thrnz/docker-wireguard-pia:latest}"
+GEN_NAME="pia-wg-gen-${STACK}-$$"
+PIA_LOC="${PIA_WG_LOCATION:-de-frankfurt}"
+
+log()  { printf '[INFO] %s\n' "$*"; }
+err()  { printf '[ERR ] %s\n' "$*" >&2; }
+
+cleanup() {
+  docker rm -f "${GEN_NAME}" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || {
+    err "required command not found: $1"
+    exit 1
+  }
+}
+
+load_secrets() {
+  [[ -f "${SECRETS_FILE}" ]] || {
+    err "missing secrets file: ${SECRETS_FILE}"
+    exit 1
+  }
+
+  set -a
+  # shellcheck disable=SC1090
+  source "${SECRETS_FILE}"
+  set +a
+
+  [[ -n "${PIA_USERNAME:-}" ]] || {
+    err "PIA_USERNAME not set in ${SECRETS_FILE}"
+    exit 1
+  }
+
+  [[ -n "${PIA_PASSWORD:-}" ]] || {
+    err "PIA_PASSWORD not set in ${SECRETS_FILE}"
+    exit 1
+  }
+}
+
+validate_prereqs() {
+  require_cmd docker
+  require_cmd "${STACK_BIN}"
+
+  [[ -d "${APP_DIR}" ]] || {
+    err "missing app dir: ${APP_DIR}"
+    exit 1
+  }
+
+  [[ -d "${WG_DIR}" ]] || {
+    err "missing wireguard dir: ${WG_DIR}"
+    exit 1
+  }
+
+  load_secrets
+}
+
+wait_for_generator_success() {
+  local i
+  for i in $(seq 1 90); do
+    if docker logs "${GEN_NAME}" 2>&1 | grep -Fq "Successfully generated /etc/wireguard/wg0.conf"; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  err "timed out waiting for generator success"
+  docker logs "${GEN_NAME}" 2>&1 || true
+  return 1
+}
+
+backup_stack() {
+  log "backup ${STACK}"
+  "${STACK_BIN}" backup "${STACK}"
+}
+
+stop_stack() {
+  log "stop ${STACK}"
+  "${STACK_BIN}" down "${STACK}"
+}
+
+remove_old_wg() {
+  if [[ -f "${WG_FILE}" ]]; then
+    log "remove old wg0.conf"
+    rm -f "${WG_FILE}"
+  else
+    log "wg0.conf not present, continuing"
+  fi
+}
+
+regenerate_wg() {
+  log "start generator container"
+  docker run -d \
+    --name "${GEN_NAME}" \
+    --cap-add=NET_ADMIN \
+    --device /dev/net/tun:/dev/net/tun \
+    -e USER="${PIA_USERNAME}" \
+    -e PASS="${PIA_PASSWORD}" \
+    -e LOC="${PIA_LOC}" \
+    -e PORT_FORWARDING=1 \
+    "${GEN_IMAGE}" >/dev/null
+
+  wait_for_generator_success
+  log "generator created fresh wg0.conf"
+}
+
+copy_wg() {
+  log "copy fresh wg0.conf to ${WG_FILE}"
+  docker cp "${GEN_NAME}:/etc/wireguard/wg0.conf" "${WG_FILE}"
+
+  [[ -s "${WG_FILE}" ]] || {
+    err "copied wg0.conf is missing or empty"
+    return 1
+  }
+}
+
+restart_stack() {
+  log "start ${STACK}"
+  "${STACK_BIN}" up "${STACK}"
+}
+
+main() {
+  validate_prereqs
+
+  log "qb-vpn-refresh started"
+  log "location: ${PIA_LOC}"
+  log "using secrets from ${SECRETS_FILE}"
+
+  backup_stack
+  stop_stack
+  remove_old_wg
+  regenerate_wg
+  copy_wg
+  restart_stack
+
+  log "qb-vpn-refresh completed"
+}
+
+main "$@"
