@@ -106,40 +106,94 @@ Critical fix:
 
 ### Primary CLI
 
-```
+```bash
 stack <command> <stack>
 ```
 
-Examples:
-
-* `stack up immich`
-* `stack down metube`
-* `stack logs immich`
-* `stack list`
-
 Shortcut:
 
-```
+```bash
 stk <command>
 ```
 
-### Backup
+---
+
+### Core Commands
+
+* `stack up <stack>` → deploy / update stack
+* `stack down <stack>` → stop stack
+* `stack logs <stack>` → view logs
+* `stack ps <stack>` → container status
+
+---
+
+### Diagnostics
+
+* `stack status` → quick system overview
+* `stack doctor <stack>` → health + config validation
+* `stack graph <stack>` → service structure
+
+Use these before deep debugging.
+
+---
+
+### Lifecycle
+
+* `stack pull <stack|all>` → pull images
+* `stack update <stack|all>` → pull + recreate containers
+
+---
+
+### Backup & Recovery
+
+* `stack backup <stack>` → create backup archive
+* `stack recover <stack>` → restore from latest backup
+* `stack backup prune` → clean old backups
+
+---
+
+### Helper Commands
+
+* `stk` → shortcut for `stack`
+* `stackcd <stack>` → jump to stack directory
+* `stackbackup` → legacy backup helper
+
+---
+
+### Key Rules
+
+* Always use `stack` instead of raw `docker compose`
+* Always load env files:
+
+  * `shared/.env.global`
+  * `shared/.env.secrets`
+* Use `stack doctor` before manual debugging
+* Use `stack status` for quick checks
+* Backup before risky changes (`stack backup <stack>`)
+
+---
+
+### Execution Model
+
+* Stacks are discovered from:
+
+  * `~/stacks/apps/*/compose.yml`
+  * `~/stacks/gateway/compose.yml`
+* Some commands support `all`
+* Priority stacks (e.g. gateway, cloudflared) may start first
+
+---
+
+### Full Reference
+
+For complete CLI documentation and advanced usage:
 
 ```
-cd ~/stacks/apps/<stack>
-stackbackup
+docs/tooling/stack-cli.md
 ```
 
-* Output: `.tar.zst`
-* Location: `~/stacks/backups/apps/<stack>/`
+If more detail is required, request this file explicitly.
 
-### Rules
-
-* Always use `stack` (not raw docker compose)
-* Env files must always be loaded:
-
-  * `.env.global`
-  * `.env.secrets` (if required)
 
 ---
 
