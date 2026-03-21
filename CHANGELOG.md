@@ -15,6 +15,26 @@
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
 ---
 
+## 3.9.58
+
+### Added
+- nodecast-tv stack (IPTV web player with Traefik routing)
+
+### Changed
+- Documented Cloudflare Tunnel → Traefik HTTPS origin pattern
+  - Use Origin Server Name + SNI instead of disabling TLS verification
+  - Prevents 502 errors when routing through cloudflared
+
+### Fixed
+- Cloudflare Tunnel 502 when using HTTPS origin (`gateway_traefik:443`)
+  - Root cause: TLS hostname mismatch (`gateway_traefik` vs app domain)
+  - Solution:
+    - Origin Server Name = <app-domain>
+    - Match SNI to Host = ON
+    - No TLS Verify = OFF
+
+---
+
 ## 3.9.57
 
 ### Added
