@@ -1,0 +1,32 @@
+name: nodecast-tv
+
+services:
+  nodecast-tv:
+    image: ghcr.io/technomancer702/nodecast-tv:latest
+    container_name: nodecast-tv
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      TZ: ${TZ:-Europe/Berlin}
+
+    volumes:
+      - ./data:/app/data
+
+    networks:
+      - proxy
+
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.nodecast-tv.rule=Host(`tv.${BASE_DOMAIN}`)
+      - traefik.http.routers.nodecast-tv.entrypoints=websecure
+      - traefik.http.routers.nodecast-tv.tls=true
+      - traefik.http.routers.nodecast-tv.tls.certresolver=cloudflare
+      - traefik.http.services.nodecast-tv.loadbalancer.server.port=3000
+      - traefik.http.routers.nodecast-tv.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+
+networks:
+  proxy:
+    external: true
