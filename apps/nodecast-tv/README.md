@@ -25,5 +25,30 @@ Rules:
 Defined via Traefik labels.
 
 Example:
-```text
-Host(tv.${BASE_DOMAIN})
+    Host(tv.${BASE_DOMAIN})
+
+## Service Port
+Internal container port:
+    3000
+
+## Storage
+Bind mounts:
+- `./data -> /app/data`
+
+Contains:
+- application state
+- database
+- playlists / provider configuration
+
+## Cloudflare Tunnel
+
+When using Cloudflare Tunnel with HTTPS origin to Traefik:
+
+- Service: `https://gateway_traefik:443`
+- Origin Server Name: `tv.${BASE_DOMAIN}`
+- Match SNI to Host: `ON`
+- No TLS Verify: `OFF`
+
+Without correct origin TLS settings, Cloudflare may return `502` even when the app and Traefik routing are healthy.
+
+See: `docs/architecture/gateway.md`
