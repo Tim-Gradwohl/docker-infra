@@ -22,13 +22,15 @@ Read in this order:
 2. `docs/policies/compose-contract.md`
 3. `docs/policies/routing-contract.md`
 4. `docs/policies/env-contract.md`
-5. target stack files:
+5. `docs/reference/known-exceptions.md`
+6. target stack files:
    * `apps/<stack>/compose.yml`
    * `apps/<stack>/README.md`
-6. `gateway/README.md` if routing, auth, or ingress is involved
-7. relevant runbooks under `docs/runbooks/`
-8. `ai-context.md` for supplemental orientation only
-9. `docs/context/docker_stack_v3.9.57.txt` for historical background only
+   * `apps/<stack>/service.meta.json` for public stacks
+7. `gateway/README.md` if routing, auth, or ingress is involved
+8. relevant runbooks under `docs/runbooks/`
+9. `ai-context.md` for supplemental orientation only
+10. `docs/context/docker_stack_v3.9.57.txt` for historical background only
 
 ---
 
@@ -55,6 +57,7 @@ Use the policy docs to interpret stack intent and review changes:
 * `docs/policies/compose-contract.md` -> expected Compose structure
 * `docs/policies/routing-contract.md` -> routing and Traefik rules
 * `docs/policies/env-contract.md` -> env and secret handling
+* `docs/reference/known-exceptions.md` -> intentional deviations that are not drift
 
 Use these before deciding whether a stack is compliant or drifting.
 
@@ -66,17 +69,20 @@ For a specific stack:
 
 1. read `apps/<stack>/compose.yml`
 2. read `apps/<stack>/README.md` if present
-3. classify it as:
+3. read `apps/<stack>/service.meta.json` if the stack is public and the file exists
+4. classify it as:
    * public app
    * LAN-only app
    * internal-only service
-4. verify:
+5. verify:
    * networks
    * Traefik labels
    * ports exposure
    * middleware
    * required env vars
    * dependencies
+    * service metadata coverage for public hostnames
+6. check `docs/reference/known-exceptions.md` before treating unusual patterns as policy violations
 
 Do not infer behavior from directory name alone.
 
@@ -107,8 +113,17 @@ Useful references:
 
 * `bin/stack`
 * `docs/tooling/stack-cli.md`
+* `bin/validate-compose-policy.sh`
 
 For normal operations, prefer `stack` / `stk` over raw `docker compose`.
+
+After changes, run:
+
+```bash
+bin/validate-compose-policy.sh
+```
+
+Then review the diff and update docs only where behavior or policy changed.
 
 ---
 
@@ -154,4 +169,6 @@ Before making a non-trivial change, you should know:
 * whether it is public, LAN-only, or internal-only
 * which env vars are required
 * which services are dependencies
-* whether any exception or drift is already documented
+* whether a public stack has `service.meta.json` coverage for its published hostnames
+* whether any exception is already documented in `docs/reference/known-exceptions.md`
+* whether any remaining mismatch is actual drift

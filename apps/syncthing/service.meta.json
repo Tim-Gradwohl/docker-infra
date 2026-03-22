@@ -1,0 +1,13 @@
+{
+  "syncthing.timopoly.com": {
+    "name": "Syncthing",
+    "description": "File synchronization and sharing",
+    "category": "Storage",
+    "icon": "sync",
+    "order": 100,
+    "tags": [
+      "files",
+      "sync"
+    ]
+  }
+}

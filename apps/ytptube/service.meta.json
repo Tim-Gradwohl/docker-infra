@@ -1,0 +1,13 @@
+{
+  "ytptube.timopoly.com": {
+    "name": "YTPTube",
+    "description": "Browser-based YouTube downloader",
+    "category": "Media",
+    "icon": "download",
+    "order": 140,
+    "tags": [
+      "youtube",
+      "downloads"
+    ]
+  }
+}

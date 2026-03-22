@@ -1,0 +1,13 @@
+{
+  "yt2midi-v2.timopoly.com": {
+    "name": "YT2MIDI v2",
+    "description": "Next-generation YouTube to MIDI stack",
+    "category": "Audio",
+    "icon": "music",
+    "order": 130,
+    "tags": [
+      "midi",
+      "musicxml"
+    ]
+  }
+}

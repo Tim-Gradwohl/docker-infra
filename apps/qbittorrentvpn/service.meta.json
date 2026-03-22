@@ -1,0 +1,13 @@
+{
+  "qbittorrent.timopoly.com": {
+    "name": "qBittorrentVPN",
+    "description": "qBittorrent routed through PIA WireGuard",
+    "category": "Downloads",
+    "icon": "download",
+    "order": 90,
+    "tags": [
+      "torrent",
+      "vpn"
+    ]
+  }
+}

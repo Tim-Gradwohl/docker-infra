@@ -1,0 +1,13 @@
+{
+  "transkun.timopoly.com": {
+    "name": "Transkun",
+    "description": "Audio-to-MIDI transcription service",
+    "category": "Audio",
+    "icon": "music",
+    "order": 110,
+    "tags": [
+      "midi",
+      "transcription"
+    ]
+  }
+}

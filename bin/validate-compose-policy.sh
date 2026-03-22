@@ -18,6 +18,151 @@ else
   ROOT_DIR="${1:-.}"
 fi
 
+declare -A SHARED_ENV=()
+
+parse_env_file() {
+  local file="$1"
+  local map_name="$2"
+  local line key value
+
+  [[ -f "$file" ]] || return 0
+
+  local -n map_ref="$map_name"
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ -z "$line" ]] && continue
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+
+    line="${line#export }"
+    key="${line%%=*}"
+    value="${line#*=}"
+
+    [[ "$line" == *"="* ]] || continue
+
+    key="$(printf '%s' "$key" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+    value="$(printf '%s' "$value" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+
+    if [[ "$value" =~ ^\".*\"$ || "$value" =~ ^\'.*\'$ ]]; then
+      value="${value:1:${#value}-2}"
+    fi
+
+    [[ -n "$key" ]] || continue
+    map_ref["$key"]="$value"
+  done < "$file"
+}
+
+resolve_var() {
+  local var_name="$1"
+  local stack_map_name="$2"
+  local default_value="${3:-}"
+  local -n stack_ref="$stack_map_name"
+
+  if [[ -n "${stack_ref[$var_name]:-}" ]]; then
+    printf '%s' "${stack_ref[$var_name]}"
+    return 0
+  fi
+
+  if [[ -n "${SHARED_ENV[$var_name]:-}" ]]; then
+    printf '%s' "${SHARED_ENV[$var_name]}"
+    return 0
+  fi
+
+  printf '%s' "$default_value"
+}
+
+resolve_template() {
+  local template="$1"
+  local stack_map_name="$2"
+  local token inner var_name default_value replacement
+
+  while [[ "$template" =~ (\$\{[^}]+\}) ]]; do
+    token="${BASH_REMATCH[1]}"
+    inner="${token:2:${#token}-3}"
+    default_value=""
+
+    if [[ "$inner" == *":-"* ]]; then
+      var_name="${inner%%:-*}"
+      default_value="${inner#*:-}"
+    else
+      var_name="$inner"
+    fi
+
+    replacement="$(resolve_var "$var_name" "$stack_map_name" "$default_value")"
+    if [[ -z "$replacement" && -z "$default_value" ]]; then
+      return 1
+    fi
+
+    template="${template//$token/$replacement}"
+  done
+
+  printf '%s' "$template"
+}
+
+collect_public_hostnames() {
+  local file="$1"
+  local stack_dir stack_env_file line host_raw resolved
+  local -n host_ref="$2"
+  declare -A stack_env=()
+
+  stack_dir="$(dirname "$file")"
+  stack_env_file="$stack_dir/.env"
+  parse_env_file "$stack_env_file" stack_env
+
+  while IFS= read -r line; do
+    [[ "$line" =~ Host\(\`([^\`]+)\`\) ]] || continue
+    host_raw="${BASH_REMATCH[1]}"
+
+    if ! resolved="$(resolve_template "$host_raw" stack_env)"; then
+      fail "$file has an unresolved public hostname template: $host_raw"
+      continue
+    fi
+
+    [[ -n "$resolved" ]] || continue
+    host_ref["$resolved"]=1
+  done < <(grep -E 'traefik\.http\.routers\..*rule=.*Host\(' "$file" | grep -v '^[[:space:]]*#' || true)
+}
+
+validate_service_metadata() {
+  local file="$1"
+  local stack_dir meta_file host meta_host
+  local -A expected_hosts=()
+  local -A metadata_hosts=()
+
+  collect_public_hostnames "$file" expected_hosts
+
+  [[ "${#expected_hosts[@]}" -gt 0 ]] || return 0
+
+  stack_dir="$(dirname "$file")"
+  meta_file="$stack_dir/service.meta.json"
+
+  if [[ ! -f "$meta_file" ]]; then
+    fail "$file is a public stack but $meta_file is missing"
+    return 0
+  fi
+
+  if ! jq -e 'type == "object"' "$meta_file" >/dev/null 2>&1; then
+    fail "$meta_file must contain a top-level JSON object"
+    return 0
+  fi
+
+  while IFS= read -r meta_host; do
+    [[ -n "$meta_host" ]] || continue
+    metadata_hosts["$meta_host"]=1
+  done < <(jq -r 'keys[]' "$meta_file")
+
+  for host in "${!expected_hosts[@]}"; do
+    if [[ -z "${metadata_hosts[$host]:-}" ]]; then
+      fail "$meta_file is missing metadata for public hostname $host"
+    fi
+  done
+
+  for meta_host in "${!metadata_hosts[@]}"; do
+    if [[ -z "${expected_hosts[$meta_host]:-}" ]]; then
+      fail "$meta_file contains stale metadata for hostname $meta_host"
+    fi
+  done
+}
+
 
 find_compose_files() {
   find "$ROOT_DIR/apps" -type f \( -name "compose.yml" -o -name "docker-compose.yml" \) 2>/dev/null | sort
@@ -67,6 +212,8 @@ check_file() {
   if [[ "$has_restart" -eq 0 ]]; then
     warn "$file is missing restart: unless-stopped"
   fi
+
+  validate_service_metadata "$file"
 }
 
 main() {
@@ -76,6 +223,8 @@ main() {
     fail "apps directory not found under $ROOT_DIR"
     exit 1
   fi
+
+  parse_env_file "$ROOT_DIR/shared/.env.global" SHARED_ENV
 
   mapfile -t files < <(find_compose_files)
 

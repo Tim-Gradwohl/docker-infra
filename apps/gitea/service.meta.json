@@ -1,0 +1,13 @@
+{
+  "gitea.timopoly.com": {
+    "name": "Gitea",
+    "description": "Private Git service over HTTP(S)",
+    "category": "Development",
+    "icon": "git",
+    "order": 70,
+    "tags": [
+      "git",
+      "forge"
+    ]
+  }
+}

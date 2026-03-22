@@ -1,0 +1,13 @@
+{
+  "iptv.timopoly.com": {
+    "name": "IPTVnator",
+    "description": "IPTV desktop-style web player",
+    "category": "Entertainment",
+    "icon": "tv",
+    "order": 80,
+    "tags": [
+      "iptv",
+      "player"
+    ]
+  }
+}

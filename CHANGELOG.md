@@ -15,6 +15,20 @@
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
 ---
 
+## 3.9.64 Service Metadata Validation Coverage
+
+### Added
+- `service.meta.json` files for the remaining checked-in public stacks that previously lacked metadata coverage
+
+### Changed
+- `bin/validate-compose-policy.sh` now validates public hostname coverage and stale entries for `apps/<stack>/service.meta.json`
+- `docs/reference/agent-onboarding.md` now tells agents to inspect `service.meta.json` for public stacks
+
+### Notes
+- compose policy validation now fails early when a public stack is missing service metadata or contains stale hostname keys
+
+---
+
 ## 3.9.63 Per-Stack Service Metadata Policy
 
 ### Added

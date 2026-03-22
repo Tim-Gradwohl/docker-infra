@@ -1,0 +1,13 @@
+{
+  "adguard.timopoly.com": {
+    "name": "AdGuard Home",
+    "description": "DNS filtering and local DNS authority",
+    "category": "Network",
+    "icon": "shield",
+    "order": 60,
+    "tags": [
+      "dns",
+      "filtering"
+    ]
+  }
+}
