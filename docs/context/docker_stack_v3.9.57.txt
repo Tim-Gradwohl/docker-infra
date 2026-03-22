@@ -1,0 +1,2721 @@
+DOCKER STACK Version: 3.9.56 Last Updated: 2026-03-10
+
+==================================================================== To
+CHATGPT:
+====================================================================
+Hello ChatGpt, Here is my docker stack configuration from previous
+sessions with chatgpt. Have a look and let me know if you understand it
+fully so you can work with it right away or still have any question
+left. Don’t write out what you already understand. If you have questions
+left, try to answer them yourself first using the Public GitHub Mirror
+link. Update Policy: If you are asked to update the document with a new
+version: Only apply changes from the current session. Document integrity
+has priority. Only CHANGELOG Section can be replaced. You can add more
+Sections according to the changes. Apply changes to sections only
+according to the session changes and don’t remove unrelated sections. If
+you want to change something unrelated to the session changes or improve
+Document structure, you need to ask first.
+
+-Review Public GitHub Mirror policy for ChatGpt: Repo:
+https://github.com/Tim-Gradwohl/docker-infra Default branch: main
+
+When reviewing the repo:
+
+1)  Always use raw.githubusercontent.com links.
+2)  Do NOT rely on memory from previous sessions.
+3)  Assume branch = main unless I provide a commit SHA.
+4)  Before making any claim about file content:
+    -   Fetch the RAW file.
+    -   Quote the exact relevant lines (max 10 lines).
+    -   Provide the raw URL you used.
+5)  If uncertain, say “UNVERIFIED” and ask me for:
+    -   a raw link
+    -   or local git output.
+
+Treat the public mirror as the only source of truth unless I paste local
+diffs.
+
+You do not need to explain how GitHub raw works. Just fetch raw files
+directly and proceed.
+
+
+====================================================================
+CHANGELOG (3.9.56 -> 3.9.57)
+====================================================================
+
+qBittorrentVPN Self-Healing + Stack Tooling Extensions
+
+- Added automatic recovery workflow for dead qBittorrentVPN WireGuard tunnels.
+
+- New host-level repair command added in:
+
+    ~/stacks/bin/qb-vpn-refresh
+
+  Function:
+    - backup qbittorrentvpn stack
+    - stop stack
+    - remove stale wg0.conf
+    - regenerate fresh WireGuard config via PIA generator container
+    - copy fresh wg0.conf into:
+        ~/stacks/apps/qbittorrentvpn/wireguard-pia/
+    - restart stack
+
+- New host-level watchdog added in:
+
+    ~/stacks/bin/qb-vpn-watchdog
+
+  Function:
+    - periodically detect dead-tunnel condition
+    - require all of:
+        - gluetun unhealthy
+        - matching dead-tunnel log pattern
+        - failed raw IP connectivity test
+    - trigger qb-vpn-refresh automatically
+    - verify recovery after refresh
+
+- Added watchdog runtime state/logging directory:
+
+    ~/stacks/state/qbittorrentvpn/
+
+- Added cron-based watchdog scheduling in WSL for periodic automatic checks.
+
+- Clarified operational separation of concerns:
+    apps/   -> stack definitions
+    bin/    -> host-level operational tooling
+    state/  -> watchdog/runtime state
+    shared/ -> secrets
+
+--------------------------------------------------------------------
+qBittorrentVPN Documentation Expansion
+--------------------------------------------------------------------
+
+- Expanded qBittorrentVPN documentation to formally describe:
+
+    - dead WireGuard tunnel failure mode
+    - manual recovery procedure
+    - qb-vpn-refresh
+    - qb-vpn-watchdog
+    - self-healing detection + verification model
+
+- Documented key operational insight:
+
+    WireGuard may report "setup complete" while passing zero traffic.
+
+  Correct detection therefore requires raw IP connectivity validation,
+  not container health alone.
+
+--------------------------------------------------------------------
+yt2midi_v3 Compose Cleanup / Parameterization
+--------------------------------------------------------------------
+
+- Refactored yt2midi_v3 compose file for stack-tool compatibility and cleaner portability.
+
+- Changed stack name from fixed value:
+
+    name: yt2midi_v3
+
+  to parameterized value:
+
+    name: ${APP_ID}
+
+- Converted build paths from absolute host paths to relative paths.
+
+- Parameterized Traefik router/service naming using:
+
+    ${APP_ID}
+    ${APP_HOST}
+    ${TRAEFIK_CERTRESOLVER:-cloudflare}
+
+- Parameterized timezone handling:
+
+    TZ=${TZ:-Europe/Berlin}
+
+- Converted yt2midi_v3 data mounts from absolute host paths to relative paths:
+
+    ./data/in
+    ./data/out
+
+--------------------------------------------------------------------
+Stack Registry Updates
+--------------------------------------------------------------------
+
+- Added new stack registration in stack tool:
+
+    yttranscript -> ~/stacks/apps/yttranscript/compose.yml
+
+--------------------------------------------------------------------
+Repository Cleanup
+--------------------------------------------------------------------
+
+- Removed obsolete file:
+
+    apps/qbittorrentvpn/backup_compose
+====================================================================
+CHANGELOG (3.9.55 -> 3.9.56)
+====================================================================
+
+Stack Toolchain Documentation
+
+- Added a dedicated documentation section:
+
+    STACK TOOLCHAIN (stack / stk / stackbackup)
+
+- This section formally documents the new operational tooling located in:
+
+    ~/stacks/bin/
+
+- Describes the following tools:
+
+    stack        → primary stack orchestration CLI
+    stk          → convenience wrapper for stack
+    stackbackup  → stack backup helper function
+
+- Clarifies that operational workflows should use:
+
+    stack <command> <stack>
+
+  instead of the historical wrapper:
+
+    ./stack
+
+- Documents automatic stack discovery and backup strategy.
+====================================================================
+CHANGELOG (3.9.54 -> 3.9.55)
+====================================================================
+
+Stack Tooling Improvements
+
+- Introduced new stack management tooling located in:
+
+    /home/tim/stacks/bin/
+
+- New primary CLI command:
+
+    stack
+
+    Replaces the historical wrapper invocation:
+
+    ./stack
+
+- Automatic stack discovery implemented:
+
+    Stacks are detected automatically from directories containing:
+
+        compose.yml
+
+    Typical locations:
+
+        ~/stacks/apps/*/compose.yml
+        ~/stacks/gateway/compose.yml
+
+- New helper alias:
+
+    stk
+
+    Example:
+
+        stk up immich
+
+- Added stack listing capability:
+
+        stack list
+
+- Introduced stack backup tooling:
+
+    shell function:
+
+        stackbackup
+
+    Usage:
+
+        cd ~/stacks/apps/<stack>
+        stackbackup
+
+    Backup location:
+
+        ~/stacks/backups/apps/<stack>/
+
+- Backup safety checks implemented:
+
+    stackbackup only runs when executed inside:
+
+        ~/stacks/apps/<stack>
+
+- Shell environment integration:
+
+    ~/.bashrc loads stack tooling automatically:
+
+        export PATH="$HOME/stacks/bin:$PATH"
+        source "$HOME/stacks/bin/stack-tools.sh"
+
+====================================================================
+CHANGELOG (3.9.53 -> 3.9.54)
+====================================================================
+- Added new application stack: yt2midi_v3
+    - Architecture split into two containers:
+        - ui (nginx static web interface)
+        - api (CUDA-based backend service)
+    - Backend uses nvidia/cuda:11.8.0-runtime-ubuntu22.04 base image.
+    - GPU access enabled using Docker Compose `gpus: all`.
+    - Storage bind mounts:
+        /home/tim/stacks/apps/yt2midi_v3/data/in -> /data/in
+        /home/tim/stacks/apps/yt2midi_v3/data/out -> /data/out
+    - Networks:
+        internal (service communication)
+        proxy (Traefik routing)
+
+- Traefik integration for yt2midi_v3
+    - Router rule:
+        Host(`yt2midi-v3.${BASE_DOMAIN}`)
+    - EntryPoint: websecure
+    - TLS enabled with certresolver=cloudflare
+    - Backend service port: 80 (nginx UI container)
+    - Authentik middleware applied via:
+        ${TRAEFIK_AUTH_MIDDLEWARE}
+
+- Stack deployment wrapper update
+    - ./stack script updated to include:
+        STACKS[landing]
+        STACKS[yt2midi_v3]
+
+- Immich routing change (temporary testing state)
+    - Authentik middleware line disabled in:
+        apps/immich/compose.yml
+    - Purpose: isolate and troubleshoot routing behavior during testing.
+    - Can be re-enabled after validation.
+
+====================================================================
+CHANGELOG (3.9.52 -> 3.9.53)
+====================================================================
+- added landing page: www.timopoly.com
+
+====================================================================
+CHANGELOG (3.9.51 -> 3.9.52)
+====================================================================
+
+-   Cloudflare Tunnel Deployment Change:
+    -   Migrated from config-file based tunnel (credentials.json + config.yml)
+        to Cloudflare **token-based tunnel mode** (remote-managed).
+    -   cloudflared container now starts with:
+        `tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}`.
+    -   Tunnel routing (public hostnames) is now configured directly in the
+        Cloudflare Zero Trust dashboard instead of config.yml.
+    -   cloudflared container attached to Docker `proxy` network to reach
+        Traefik internally.
+
+-   Tunnel → Traefik Validation:
+    -   Verified successful QUIC connections from cloudflared to Cloudflare edge.
+    -   Confirmed routing path:
+        Cloudflare Edge → Tunnel → Traefik → Docker services.
+
+-   MeTube External Access Test:
+    -   Temporarily disabled Authentik middleware on MeTube router during
+        connectivity testing.
+    -   Confirmed tunnel routing works correctly for `metube.${BASE_DOMAIN}`.
+    -   Authentik middleware can be re-enabled once testing completes.
+
+====================================================================
+CHANGELOG (3.9.50 -> 3.9.51)
+====================================================================
+
+-   HTTPS Migration Completed (Production Mode):
+    -   Switched from Let's Encrypt staging to production ACME endpoint.
+    -   Valid production certificates issued via DNS-01 (Cloudflare).
+    -   Verified issuer: Let's Encrypt R12.
+    -   Confirmed valid certificate chain via openssl verification.
+
+-   Traefik HTTPS-First Model:
+    -   websecure (:443) is now primary entrypoint.
+    -   HTTP (:80) permanently redirects to HTTPS.
+    -   Removed redundant per-app HTTP entrypoints where applicable.
+    -   Confirmed certificate resolver defaults via entrypoint configuration.
+
+-   Cloudflare Tunnel Architecture Alignment:
+    -   Confirmed tunnel → Traefik → service routing model.
+    -   Validated production certificate compatibility with Cloudflare origin validation.
+    -   Clarified token-based tunnel vs config-file based tunnel approaches (no structural change applied yet).
+
+-   Authentik Rollout Stabilized:
+    -   Successfully re-enabled ForwardAuth on selected services (e.g., metube).
+    -   Confirmed correct callback routing to authentik_proxy outpost.
+    -   Verified proper redirect back to protected services after login.
+
+
+====================================================================
+CHANGELOG (3.9.49 -> 3.9.50)
+====================================================================
+
+-   Global Authentication System (Authentik + Traefik ForwardAuth):
+    -   Deployed dedicated Authentik stack (server, worker, postgres,
+        redis, proxy outpost).
+
+    -   Introduced Traefik ForwardAuth integration using file provider
+        middlewares.
+
+    -   Created dynamic middleware chain: authentik-forwardauth +
+        authentik-errors.
+
+    -   Implemented dedicated Traefik router split:
+        -   auth.${BASE_DOMAIN} → authentik_server (UI/Admin)
+        -   auth.${BASE_DOMAIN} + PathPrefix(/outpost.goauthentik.io/) →
+            authentik_proxy (Outpost)
+
+    -   Added global middleware variable:
+        TRAEFIK_AUTH_MIDDLEWARE=authentik-chain@file stored in
+        shared/.env.global.
+
+    -   Validated ForwardAuth flow using iptv.${BASE_DOMAIN}.
+
+    -   Confirmed correct redirect behavior after login (no admin
+        fallback).
+
+    -   Documented required AUTHENTIK_HOST and AUTHENTIK_HOST_BROWSER
+        alignment.
+
+    -   Confirmed proxy v2 outpost endpoints require dedicated routing.
+
+SYSTEM CONTEXT
+
+Environment: - Windows 11 - Docker Desktop (WSL2 backend) - Docker disk
+image relocated to: D: - WSL2 distro: Ubuntu - Docker Engine runs inside
+WSL2 (Linux containers only) - No Windows containers
+
+LAN addressing (important): - 192.168.188.23 = Windows host LAN IPv4
+address (the PC running Docker Desktop). - This is the IP where Docker
+Desktop publishes host ports (e.g., Traefik :80). - AdGuard DNS rewrites
+map internal hostnames to this IP so clients hit Traefik on the host. -
+Recommendation: make 192.168.188.23 static by DHCP reservation on the
+FRITZ!Box (or static IP on the host) to avoid breaking internal DNS
+rewrites and bookmarks.
+
+Dynamic DNS (current): - Public hostname: dwdy7knao2qlc49i.myfritz.net
+(not currently used for app routing) - Router: FRITZ!Box
+(192.168.188.1) - Public access via port 80 forwarding (WAN -> Traefik
+:80) is possible, but no public host rules enabled.
+
+Planned domain: - timscloud.net (future purchase) - Internal namespace:
+*.lan.timscloud.net (Split DNS / internal zone) - NOTE (current state):
+LAN hostnames are parameterized via LAN_DOMAIN (default:
+lan.timscloud.net).
+
+====================================================================
+HIGH-LEVEL TOPOLOGY
+====================================================================
+
+WAN (Internet) -> FRITZ!Box Router -> Port 80 forwarded to Windows host
+(192.168.188.23) -> Traefik (gateway_traefik) -> Target container via
+Docker “proxy” network
+
+LAN (192.168.188.0/24) -> AdGuard DNS (port 53 on 192.168.188.23) ->
+Local domain resolution (internal zone: *.lan.timscloud.net ->
+192.168.188.23) -> Traefik routing for HTTP services
+
+====================================================================
+OPERATIONAL ASSUMPTIONS (to avoid ambiguity)
+==================================================================== -
+Docker Compose mode (not Swarm). - Default Docker networking: - Standard
+bridge networks only (docker0/bridge + compose networks). - One external
+bridge network named “proxy” used for Traefik routing. - No macvlan, no
+host networking. - Exception: qbittorrentvpn uses network_mode:
+service:gluetun for qBittorrent to enforce VPN-only egress. - Traefik
+routing uses Docker labels (Docker provider). - File provider enabled
+for dashboard middlewares (watch disabled). - CURRENT (3.9.35): Stacks
+are deployed via CLI wrapper only (./stack). - shared/.env.global is
+always loaded. - shared/.env.secrets is injected automatically when
+required. - Manual docker compose deployment without wrapper is
+deprecated.
+
+==================================================================== WSL
+STACK STRUCTURE
+====================================================================
+
+/home/tim/stacks/ gateway/compose.yml gateway/dynamic/dashboard.yml
+gateway/dynamic/tls.yml gateway/certs/ apps/immich/compose.yml
+apps/immich/.env (deprecated; local-only; ignored by Git)
+apps/adguardhome/compose.yml apps/adguardhome/data/work
+apps/adguardhome/data/conf apps/iptvnator/compose.yml
+apps/metube/compose.yml apps/ytptube/compose.yml
+apps/qbittorrentvpn/compose.yml apps/qbittorrentvpn/scripts/ (versioned;
+port-sync helper scripts) apps/qbittorrentvpn/gluetun/ (ignored; runtime
+state) apps/qbittorrentvpn/qbittorrent/ (ignored; runtime state +
+credentials) apps/gitea/compose.yml apps/obsidian/compose.yml
+apps/syncthing/compose.yml apps/transkun/compose.yml
+apps/yt2midi/compose.yml apps/yt2midi_v2/compose.yml #
+apps/portainer/compose.yml (REMOVED in 3.9.30) shared/.env.global
+(committed) shared/.env.secrets (ignored; local only)
+
+Git repository (source of truth): - Gitea repo: docker-infra - Default
+branch: main - Repo URL (LAN):
+http://gitea.lan.timscloud.net/admin/docker-infra.git - Repo URL
+(infra-safe / DNS independent; inside Docker):
+http://gitea:3000/admin/docker-infra.git - Public GitHub Mirror:
+https://github.com/Tim-Gradwohl/docker-infra
+====================================================================
+DOCKER NETWORK ROLES
+====================================================================
+
+proxy: - External Docker bridge network (external: true) - Shared
+between Traefik and routed services - Used for HTTP routing (LAN + WAN
+entrypoint through Traefik)
+
+internal: - Default Docker Compose bridge network - Used for
+intra-service communication - Not externally accessible
+
+====================================================================
+REVERSE PROXY (Gateway)
+====================================================================
+
+Traefik v3.6.4 Container: gateway_traefik
+
+Provider model: - Docker provider: enabled (labels on containers) - File
+provider: enabled (dynamic middlewares; watch disabled)
+
+Entrypoints / exposure (current):
+
+TLS model (current): - Self-signed wildcard certificate for
+*.lan.timscloud.net - Dynamic TLS store via file provider
+(gateway/dynamic/tls.yml) - Certificates stored at:
+/home/tim/stacks/gateway/certs - websecure entrypoint forces TLS
+
+-   web (HTTP): :80 published on Windows host
+-   websecure (HTTPS): :443 published on Windows host
+-   No direct dashboard port exposure
+
+Dashboard security status (hardened): - Traefik dashboard enabled via: -
+–api=true - –api.dashboard=true - –api.insecure is disabled - Dashboard
+routed via: -
+Host(traefik.BASE_DOMAIN) − service = api@internal − middlewares =
+lan-only (IP allowlist only; BasicAuth removed in 3.9.47) − IP allowlist
+comes from file provider
+(gateway/dynamic/shared.yml) − BasicAuthcomesfromDockerlabelusingenvvarTRAEFIK_(D)ASHBOARD_(A)UTH(storedinshared/.env.secrets) − NOTE : bcrypthashesinclude′’
+and must be stored with
+’′escapedas′′in.envfiles − Dashboardaccessibleonlyviaroutedhostname :  − http : //traefik.{LAN_DOMAIN} -
+No direct access via: - http://192.168.188.23:8080
+
+Exposure clarification: - Port 80 is forwarded from router (public WAN
+exposure). - No dashboard port is published on host. - Dashboard
+requires LAN source IP + Basic Auth.
+
+Routing flow: Internet -> Router -> Windows host :80 -> Traefik ->
+Container (via proxy network)
+
+Only Traefik port 80 is reachable from WAN.
+
+====================================================================
+ADGUARD HOME (DNS + LAN AUTHORITY)
+====================================================================
+
+Purpose: - Network-wide DNS filtering - Authoritative DNS for LAN
+(internal hostnames) - Local DNS rewrites (internal zone + any legacy
+hostnames still in use) - Encrypted upstream DNS (DoH configured inside
+AdGuard)
+
+Container: - adguardhome
+
+Ports exposed on Windows host (LAN only): - 53/tcp - 53/udp (Note: DNS
+cannot be proxied through Traefik; it must be reachable directly on
+:53.)
+
+Security model: - Port 53 restricted via Windows Firewall to
+192.168.188.0/24 - No router port forwarding for port 53 - Not
+accessible from WAN
+
+Admin Web Interface routing method (current): - AdGuard’s Admin UI is
+routed via Traefik using labels on the AdGuard container itself. - No
+separate “whoami-style” helper router is used.
+
+Admin UI access (current): - http://adguard.${LAN_DOMAIN} Notes: -
+Legacy *.local hostnames were removed.
+
+Internal DNS rules (current): - Wildcard rewrite: *.${LAN_DOMAIN} ->
+192.168.188.23
+
+Router DNS configuration: - IPv4 DNS: 192.168.188.23 (AdGuard) ✅ - IPv6
+DNS: fd00::392b:1b30:2508:fec7 (FRITZ!Box still advertises IPv6 DNS) ⚠️
+
+Bind mounts (Portainer/Git-stack safe): -
+/home/tim/stacks/apps/adguardhome/data/work -> /opt/adguardhome/work -
+/home/tim/stacks/apps/adguardhome/data/conf -> /opt/adguardhome/conf
+
+====================================================================
+IMMICH STACK (PHOTOS SERVICE)
+====================================================================
+
+Containers: - immich_server - immich_postgres - immich_redis -
+immich_machine_learning
+
+Networks: - internal - proxy
+
+Traefik labels on immich_server (current): - traefik.enable=true -
+traefik.docker.network=proxy -
+traefik.http.routers.photos-lan.rule=Host(photos.${BASE_DOMAIN}) -
+traefik.http.routers.photos-lan.entrypoints=web -
+traefik.http.routers.photos-lan.service=immich -
+traefik.http.services.immich.loadbalancer.server.port=2283
+
+Exposure model: - Port 2283 is NOT exposed - All HTTP traffic flows
+through Traefik - Domain-based routing only
+
+Access (current): - LAN: http://photos.${BASE_DOMAIN}
+
+CLI env/secrets note (current): - Immich requires DB vars from
+shared/.env.secrets. - Fail-fast guards are used in compose (deployment
+fails if missing): -
+DB_PASSWORD=DB_(P)ASSWORD : ?setinshared/.env.secrets − DB_(U)SERNAME={DB_USERNAME:?set
+in shared/.env.secrets} - DB_DATABASE_NAME=${DB_DATABASE_NAME:?set in
+shared/.env.secrets}
+
+====================================================================
+IPTVNATOR STACK (IPTV PLAYER)
+====================================================================
+
+Container: - iptvnator
+
+Image: - 4gray/iptvnator:latest
+
+Networks: - proxy
+
+Internal service port: - 80/tcp (inside container)
+
+Traefik labels on iptvnator (current observed config): -
+traefik.enable=true - traefik.docker.network=proxy -
+traefik.http.routers.iptvnator.rule=Host(iptv.${BASE_DOMAIN}) -
+traefik.http.routers.iptvnator.entrypoints=web -
+traefik.http.services.iptvnator.loadbalancer.server.port=80
+
+Access (current): - LAN: http://iptv.${BASE_DOMAIN}
+
+====================================================================
+METUBE STACK (yt-dlp WEB UI)
+====================================================================
+
+Purpose: - Browser-based UI for yt-dlp downloads (paste URL -> download)
+
+Container: - metube
+
+Image: - ghcr.io/alexta69/metube:latest
+
+Networks: - proxy
+
+Internal service port: - 8081/tcp (inside container)
+
+Traefik labels on metube (intended config): - traefik.enable=true -
+traefik.docker.network=proxy -
+traefik.http.routers.metube.rule=Host(metube.${BASE_DOMAIN}) -
+traefik.http.routers.metube.entrypoints=web -
+traefik.http.routers.metube.service=metube -
+traefik.http.services.metube.loadbalancer.server.port=8081 (Optional
+hardening): - Apply LAN-only allowlist middleware (recommended if WAN
+:80 is forwarded)
+
+Exposure model: - No host port is published for MeTube - All HTTP access
+flows through Traefik (Host-based routing)
+
+Access (current): - LAN: http://metube.${BASE_DOMAIN}
+
+====================================================================
+YTPTUBE STACK (YOUTUBE PLAYLIST TOOL)
+====================================================================
+
+Purpose: - Self-hosted ytptube service (container image hosted via
+GitHub Container Registry).
+
+Container: - ytptube
+
+Image (current): - ghcr.io/arabcoders/ytptube (as defined in
+apps/ytptube/compose.yml)
+
+Networks: - proxy
+
+Exposure model: - Routed via Traefik using Docker labels (Host-based
+routing). - No host ports should be published directly.
+
+Access (intended): - LAN: http://ytptube.${BASE_DOMAIN}
+
+====================================================================
+QBITTORRENTVPN STACK (GLUETUN + QBITTORRENT + PIA WIREGUARD)
+====================================================================
+
+Purpose:
+- Run qBittorrent strictly behind a PIA WireGuard tunnel using Gluetun.
+- Use PIA Next-Gen port forwarding.
+- Keep qBittorrent’s incoming port aligned automatically.
+- Self-heal dead WireGuard tunnels via automated regeneration.
+
+--------------------------------------------------------------------
+CONTAINERS
+--------------------------------------------------------------------
+
+- qbittorrentvpn_gluetun
+- qbittorrentvpn-qbittorrent-1
+- qbittorrentvpn_pia-pf
+- qbittorrentvpn_pf-writer
+- qbittorrentvpn_port-sync
+
+--------------------------------------------------------------------
+CORE ENFORCEMENT ("ALWAYS VPN")
+--------------------------------------------------------------------
+
+- qBittorrent uses: network_mode: service:gluetun
+- All traffic shares Gluetun’s network namespace.
+- If Gluetun is down, qBittorrent loses network connectivity.
+
+--------------------------------------------------------------------
+WIREGUARD MODEL
+--------------------------------------------------------------------
+
+- Gluetun runs in custom WireGuard mode.
+- wg0.conf is generated externally and bind-mounted:
+
+  /home/tim/stacks/apps/qbittorrentvpn/wireguard-pia/wg0.conf
+    ->
+  /gluetun/wireguard/wg0.conf (read-only)
+
+- WireGuard can report "setup complete" while passing no traffic.
+- Dead/stale endpoints are a known failure mode and require regeneration.
+
+--------------------------------------------------------------------
+PORT FORWARDING (PIA NEXT-GEN)
+--------------------------------------------------------------------
+
+- Handled by thrnz/docker-wireguard-pia (pia-pf container).
+- Forwarded port written to: /pia-shared/port.dat
+
+--------------------------------------------------------------------
+PORT PROPAGATION PIPELINE
+--------------------------------------------------------------------
+
+1) pia-pf writes port.dat
+2) pf-writer mirrors to /gluetun/forwarded_port
+3) port-sync reconciles qBittorrent configuration
+4) qBittorrent is restarted only when port changes
+
+--------------------------------------------------------------------
+AUTOMATIC PORT SYNC (QBITTORRENT)
+--------------------------------------------------------------------
+
+- port-sync uses docker:cli image.
+- Mounts:
+  - /var/run/docker.sock
+  - qBittorrent config directory (read-write)
+  - /gluetun/forwarded_port
+
+- Updates:
+  - Session
+  - Connection
+
+- Persists last applied port in:
+  /config/.last_forwarded_port
+
+--------------------------------------------------------------------
+SECURITY NOTE
+--------------------------------------------------------------------
+
+- port-sync mounts Docker socket.
+- Treat this container as high-trust.
+- Scripts are versioned under:
+  apps/qbittorrentvpn/scripts/
+
+--------------------------------------------------------------------
+KNOWN FAILURE MODE: DEAD WIREGUARD TUNNEL
+--------------------------------------------------------------------
+
+Symptoms:
+- qbittorrentvpn_gluetun becomes unhealthy
+- Logs show:
+  - "i/o timeout"
+  - "failed to pass the healthcheck"
+  - repeated VPN restarts
+- WireGuard reports "setup complete" but no traffic flows
+- Inside container:
+  ping 1.1.1.1 → fails
+
+Root cause:
+- Stale or non-functional PIA endpoint in wg0.conf
+
+--------------------------------------------------------------------
+MANUAL RECOVERY PROCEDURE
+--------------------------------------------------------------------
+
+1) Stop stack:
+   stk down qbittorrentvpn
+
+2) Remove old config:
+   rm wireguard-pia/wg0.conf
+
+3) Regenerate using PIA generator container
+
+4) Copy:
+   /etc/wireguard/wg0.conf → wireguard-pia/wg0.conf
+
+5) Start stack:
+   stk up qbittorrentvpn
+
+6) Validate:
+   docker exec qbittorrentvpn_gluetun ping -c1 1.1.1.1
+
+--------------------------------------------------------------------
+AUTOMATED RECOVERY
+--------------------------------------------------------------------
+
+Two host-level tools handle recovery:
+
+1) qb-vpn-refresh  (repair primitive)
+2) qb-vpn-watchdog (detector + orchestrator)
+
+Both are located in:
+~/stacks/bin/
+
+--------------------------------------------------------------------
+qb-vpn-refresh (REPAIR COMMAND)
+--------------------------------------------------------------------
+
+Purpose:
+- Deterministic recovery of dead WireGuard tunnel
+
+Steps:
+1) Backup stack
+2) Stop stack
+3) Remove wg0.conf
+4) Generate new config via PIA container
+5) Copy wg0.conf from generator container
+6) Restart stack
+
+Usage:
+  qb-vpn-refresh
+
+Notes:
+- Uses credentials from:
+  ~/stacks/shared/.env.secrets
+- Does NOT perform detection
+- Does NOT perform long-term health verification
+
+--------------------------------------------------------------------
+qb-vpn-watchdog (SELF-HEALING LOOP)
+--------------------------------------------------------------------
+
+Purpose:
+- Detect dead tunnel condition
+- Trigger qb-vpn-refresh automatically
+- Verify recovery
+
+Detection conditions (all required):
+- Gluetun container is unhealthy
+- Logs match dead-tunnel pattern
+- Raw IP connectivity fails:
+  ping 1.1.1.1
+
+Behavior:
+- Runs periodically (cron)
+- Applies cooldown (default: 30 minutes)
+- Prevents concurrent runs via lock
+- Calls qb-vpn-refresh
+- Verifies:
+  - raw IP connectivity restored
+  - DNS connectivity
+  - container health
+
+State + logs:
+  ~/stacks/state/qbittorrentvpn/
+
+--------------------------------------------------------------------
+CRON CONFIGURATION (WSL)
+--------------------------------------------------------------------
+
+Run every 5 minutes:
+
+  */5 * * * * /home/tim/stacks/bin/qb-vpn-watchdog >/dev/null 2>&1
+
+Start cron manually in WSL:
+
+  sudo service cron start
+
+--------------------------------------------------------------------
+ARCHITECTURE SUMMARY
+--------------------------------------------------------------------
+
+apps/    → stack definitions (compose, configs)
+bin/     → operational tooling (refresh, watchdog)
+state/   → runtime state and logs
+shared/  → secrets (.env.secrets)
+
+Separation of concerns:
+- Stack = declarative runtime
+- Refresh = repair action
+- Watchdog = decision + automation
+
+--------------------------------------------------------------------
+KEY INSIGHT
+--------------------------------------------------------------------
+
+WireGuard may appear "connected" while passing zero traffic.
+
+Correct detection requires:
+- NOT just container health
+- BUT confirmed raw IP failure (1.1.1.1)
+
+Regenerating wg0.conf is the canonical fix.
+====================================================================
+PORTAINER STACK
+====================================================================
+
+Container: - portainer
+
+Image: - portainer/portainer-ce:latest
+
+Networks: - proxy
+
+Internal port: - 9000 (HTTP UI)
+
+Status (current): - REMOVED in 3.9.30 (CLI-only management). Section
+retained for historical context.
+
+(Former) Access (primary / intended): -
+http://portainer.lan.timscloud.net - No host ports published (normal
+steady-state) - Routed exclusively via Traefik
+
+Migration/operational note: - During gateway (Traefik) migration,
+Portainer may be temporarily exposed via a host port (e.g., 9001:9000)
+to keep the UI available while Traefik is restarted. - Recommended: keep
+this temporary port disabled in steady-state, or restrict it to LAN via
+firewall.
+
+Security considerations: - Docker socket mounted: /var/run/docker.sock -
+Recommended LAN-only IP allowlist middleware - Optional additional Basic
+Auth middleware (Traefik-level)
+
+Volume: - Docker named volume: portainer_data
+
+====================================================================
+GITEA STACK (SELF-HOSTED GIT)
+====================================================================
+
+Purpose: - Self-hosted Git server for “infrastructure-as-code” - Hosts
+docker-infra repository used by stack deployments
+
+Container: - gitea
+
+Image: - gitea/gitea:latest
+
+Networks: - proxy
+
+Internal service port: - 3000/tcp (HTTP)
+
+Access (current): - LAN: http://gitea.${BASE_DOMAIN}
+
+Notes: - Gitea is used as the Git remote for stack definitions
+(docker-infra repo). - Internal Docker URL for repo access (DNS
+independent): http://gitea:3000/admin/docker-infra.git
+
+====================================================================
+OBSIDIAN STACK (NEW IN 3.9.39)
+
+Status (current): - REMOVED in 3.9.47 (stack and routing deleted).
+Section retained for historical context.
+
+Purpose: - Self-hosted Obsidian Web (LinuxServer container) - Shared
+vault usable from Windows standalone
+
+Image: - lscr.io/linuxserver/obsidian:latest
+
+Networks: - proxy
+
+Routing: - Host(obsidian.${LAN_DOMAIN}) - EntryPoint: websecure - TLS
+enabled - Backend: HTTPS port 3001 - serverstransport=ignorecert@file
+
+Storage: - Bind mount: /mnt/d/Docker/obsidian -> /config
+
+Vault location: - Create vault inside: /config/
+
+Windows standalone access: - Open: D:
+
+Operational note: - Vault-level settings (.obsidian/) are portable. - Do
+not open the same vault simultaneously in Docker and Windows standalone.
+
+====================================================================
+SYNCTHING STACK (NEW IN 3.9.40)
+====================================================================
+
+Purpose: - Device-to-device file synchronization - Optional
+infrastructure folder replication
+
+Container: - syncthing
+
+Image: - lscr.io/linuxserver/syncthing:latest
+
+Networks: - proxy - internal
+
+Routing: - Host(syncthing.${BASE_DOMAIN}) - EntryPoint: web - Backend:
+8384
+
+Host Port Mapping (LAN-only): - 23100 -> 22000/tcp - 23100 ->
+22000/udp - 21127 -> 21027/udp
+
+Storage: - /home/tim/stacks/apps/syncthing/config -> /config -
+/home/tim/stacks -> /stacks
+
+Security Note: - /home/tim/stacks is infrastructure control plane. - Git
+remains authoritative source of truth.
+
+====================================================================
+WIREGUARD GENERATION WORKFLOW
+====================================================================
+
+Purpose: Generate a valid PIA Next-Gen WireGuard configuration
+(wg0.conf) once, store it locally (never commit), and integrate it into
+the stack.
+
+Location: /home/tim/stacks/apps/qbittorrentvpn/wireguard-pia/
+
+Step 1 — Generate wg0.conf (one-time):
+
+docker run –rm -it –cap-add=NET_ADMIN –device /dev/net/tun:/dev/net/tun
+-e USER=“” -e PASS=“” -e LOC=de-frankfurt -e PORT_FORWARDING=1 -v
+/home/tim/stacks/apps/qbittorrentvpn/wireguard-pia:/pia-shared
+thrnz/docker-wireguard-pia:latest
+
+Result: - wg0.conf created inside wireguard-pia directory - port.dat
+created (runtime only)
+
+Step 2 — Verify wg0.conf exists:
+
+ls -l /home/tim/stacks/apps/qbittorrentvpn/wireguard-pia/wg0.conf
+
+Step 3 — Deploy stack:
+
+./stack up qbittorrentvpn
+
+Integration model: - Gluetun runs with: VPN_SERVICE_PROVIDER=custom
+VPN_TYPE=wireguard - wg0.conf is mounted read-only into Gluetun.
+
+Security rules: - wireguard-pia/ directory is ignored in Git. - wg0.conf
+must never enter repository history. - Credentials are never stored
+inside compose files.
+
+Rotation: If wg0.conf expires or region changes: 1) Stop qbittorrentvpn
+stack 2) Re-run generation command 3) Redeploy stack
+
+====================================================================
+STORAGE MODEL
+====================================================================
+
+Immich: - Docker named volumes (project-prefixed in current CLI compose
+usage): - immich_immich_data - immich_immich_pgdata -
+immich_model-cache - Stored inside docker_data.vhdx - Physical location:
+D:
+
+AdGuard: - Bind mounts inside WSL:
+/home/tim/stacks/apps/adguardhome/data/work
+/home/tim/stacks/apps/adguardhome/data/conf
+
+IPTVnator: - Docker named volume: iptvnator_data
+
+MeTube: - Bind mount via WSL to Windows disk:
+/mnt/d/Docker/metube/downloads (Windows: D:) - Container path:
+/downloads
+
+Portainer: - Docker named volume: portainer_data (historical; no longer
+used if Portainer removed)
+
+Gitea: - Docker named volume: gitea_data
+
+Syncthing: - Bind mounts inside WSL: -
+/home/tim/stacks/apps/syncthing/config - /home/tim/stacks
+
+External media library: - Windows path: D:v600 - Mounted into Immich as
+/ext_library (read-only)
+
+====================================================================
+TRANSKUN STACK (NEW IN 3.9.42)
+====================================================================
+
+Purpose: - GPU-accelerated audio-to-MIDI transcription using Transkun. -
+Minimal FastAPI-based web interface for browser uploads.
+
+Containers: - transkun (CLI container) - transkun_web (FastAPI web
+service)
+
+Base Image: - nvidia/cuda:11.8.0-runtime-ubuntu22.04
+
+GPU Model: - gpus: all enabled (Docker Compose). - PyTorch cu118 wheels
+for Pascal compatibility (GTX 1060 sm_61). - NVRTC symlink workaround
+applied to resolve CuDNN Conv_v8 warning.
+
+Networks: - internal - proxy (web service only)
+
+Traefik Routing: - traefik.enable=true - traefik.docker.network=proxy -
+traefik.http.routers.transkun.rule=Host(transkun.${BASE_DOMAIN}) -
+traefik.http.routers.transkun.entrypoints=web -
+traefik.http.services.transkun.loadbalancer.server.port=8000
+
+Access (current): - LAN: http://transkun.${BASE_DOMAIN}
+
+Storage: - /home/tim/stacks/apps/transkun/data/in -> /data/in -
+/home/tim/stacks/apps/transkun/data/out -> /data/out
+
+Git Hygiene: - apps/transkun/data/ is ignored (runtime artifacts only).
+
+====================================================================
+YT2MIDI STACK (NEW IN 3.9.43)
+====================================================================
+
+Purpose: - One-step YouTube → MP3 + MIDI generation workflow. - Combines
+yt-dlp audio extraction with GPU-accelerated Transkun transcription. -
+Eliminates manual MeTube → Transkun workflow.
+
+Container: - yt2midi_web
+
+Base Image: - nvidia/cuda:11.8.0-runtime-ubuntu22.04
+
+GPU Model: - gpus: all enabled (Docker Compose). - PyTorch cu118 wheels
+for Pascal compatibility (GTX 1060 sm_61). - numpy pinned to <2.
+
+Networks: - internal - proxy
+
+Traefik Routing: - traefik.enable=true - traefik.docker.network=proxy -
+traefik.http.routers.yt2midi.rule=Host(yt2midi.${BASE_DOMAIN}) -
+traefik.http.routers.yt2midi.entrypoints=web -
+traefik.http.services.yt2midi.loadbalancer.server.port=8000
+
+Access (current): - LAN: http://yt2midi.${BASE_DOMAIN}
+
+Workflow: 1) User submits YouTube URL. 2) yt-dlp downloads best audio
+and extracts MP3. 3) Transkun generates MIDI using GPU (or CPU
+fallback). 4) Both MP3 and MIDI are provided for download.
+
+Storage: - /home/tim/stacks/apps/yt2midi/data/in -> /data/in -
+/home/tim/stacks/apps/yt2midi/data/out -> /data/out
+
+Filename Policy: - Original YouTube video title preserved for MP3 and
+MIDI outputs (filesystem-safe).
+
+Git Hygiene: - apps/yt2midi/data/ is ignored (runtime artifacts only).
+
+====================================================================
+YT2MIDI_V2 STACK (NEW IN 3.9.46)
+====================================================================
+
+Purpose: - Enhanced YouTube → MP3 + MIDI + MusicXML workflow. -
+Architecturally separate from legacy yt2midi stack. - Designed for
+improved sheet-music generation quality.
+
+Container: - yt2midi_v2_web
+
+Base Image: - nvidia/cuda:11.8.0-runtime-ubuntu22.04
+
+GPU Model: - gpus: all enabled (Docker Compose). - PyTorch cu118 wheels
+(Pascal compatible). - numpy pinned to <2.
+
+Networks: - internal - proxy
+
+Traefik Routing: - Host(yt2midi-v2.${BASE_DOMAIN}) - EntryPoint: web -
+Backend port: 8000
+
+Access (current): - LAN: http://yt2midi-v2.${BASE_DOMAIN}
+
+Capabilities: - yt-dlp audio extraction - Transkun GPU transcription -
+RAW MIDI output - LH/RH split MIDI with sustain preservation - Key
+detection analysis.json output - MusicXML export with forced clefs -
+Built-in Web UI at root (/) - Secure job-based download endpoints
+
+Storage: - /home/tim/stacks/apps/yt2midi_v2/data/in -> /data/in -
+/home/tim/stacks/apps/yt2midi_v2/data/out -> /data/out
+
+Git Hygiene: - apps/yt2midi_v2/data/ ignored in Git (runtime artifacts
+only).
+====================================================================
+AUTHENTIK STACK (GLOBAL SSO – NEW IN 3.9.50)
+====================================================================
+
+Purpose: - Centralized authentication for all HTTP services behind
+Traefik. - Enforced via ForwardAuth middleware. - No direct protection
+on authentik UI itself (bootstrapping safety rule).
+
+Containers: - authentik_server - authentik_worker - authentik_postgres -
+authentik_redis - authentik_proxy (Outpost)
+
+Networks: - internal - proxy
+
+Routing Model (critical split): -
+Host(auth.BASE_(D)OMAIN) → authentik_(s)erver(UI) − Host(auth.{BASE_DOMAIN})
+&& PathPrefix(/outpost.goauthentik.io/) → authentik_proxy (Outpost
+endpoints)
+
+Middleware Model: File provider dynamic config: -
+authentik-forwardauth - authentik-errors - authentik-chain
+
+Global Middleware Variable: shared/.env.global:
+TRAEFIK_AUTH_MIDDLEWARE=authentik-chain@file
+
+Usage in stacks:
+traefik.http.routers..middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+
+Security Notes: - Never apply ForwardAuth middleware to authentik
+itself. - Outpost callback endpoints MUST route to authentik_proxy, not
+authentik_server. - AUTHENTIK_HOST must match public authentication
+URL. - Cookie domain must be parent domain (.${BASE_DOMAIN}).
+
+
+====================================================================
+LANDING PAGE Stack
+====================================================================
+
+- Landing Page Service Added:
+    - Introduced new lightweight landing page stack served via nginx.
+    - Purpose: provide a public index of available services at:
+        https://www.timopoly.com
+    - Landing page dynamically loads service links from a separate
+        `services.json` file so services can be edited without rebuilding
+        the container.
+    - Landing page files located at:
+        /home/tim/stacks/apps/landing/site/
+            - index.html
+            - services.json
+    - nginx container serves static files from:
+        /usr/share/nginx/html
+
+- Docker Stack Integration:
+    - New compose stack path:
+        /home/tim/stacks/apps/landing/compose.yml
+    - Container name: `landing`
+    - Image: nginx:alpine
+    - Connected to Docker `proxy` network to allow Traefik routing.
+
+- Traefik Routing:
+    - Router rule:
+        Host(`www.timopoly.com`)
+    - EntryPoint: websecure
+    - TLS enabled.
+    - Backend service port: 80.
+
+- Cloudflare Tunnel Exposure:
+    - Public hostname `www.timopoly.com` added via Cloudflare Zero Trust
+      tunnel configuration.
+    - Traffic flow:
+        Internet → Cloudflare Edge → Cloudflare Tunnel → Traefik
+        → landing nginx container.
+
+- Volume Mount Adjustment (Operational Fix):
+    - Bind mounts updated to absolute host paths to avoid empty mount
+      directories causing nginx `403 Forbidden` errors.
+    - Final mount model:
+        /home/tim/stacks/apps/landing/site/index.html ->
+        /usr/share/nginx/html/index.html
+        /home/tim/stacks/apps/landing/site/services.json ->
+        /usr/share/nginx/html/services.json
+
+
+====================================================================
+EXPOSURE MODEL
+====================================================================
+
+Publicly exposed (WAN): - Port 80 (Traefik only) - Port 443 (Traefik
+only)
+
+LAN only: - Port 53 (AdGuard DNS) - Traefik dashboard via LAN-only
+allowlist routed hostname (no BasicAuth as of 3.9.47) - Internal zone:
+*.${LAN_DOMAIN} (AdGuard authoritative rewrite)
+
+Not exposed (direct container ports): - Immich port 2283 - Postgres -
+Redis - Machine learning container - IPTV internal port 80 - MeTube
+internal port 8081 - Gitea internal port 3000 (only via Traefik)
+
+====================================================================
+TRUST BOUNDARIES
+====================================================================
+
+Zone 1: WAN (Untrusted Internet) Zone 2: Router (Edge NAT device) Zone
+3: Windows Host (192.168.188.23) Zone 4: Docker networks (proxy +
+internal) Zone 5: LAN (192.168.188.0/24)
+
+Only Traefik port 80 is reachable from Zone 1. AdGuard DNS reachable
+only from Zone 5. Traefik dashboard protected by LAN-only allowlist
+(BasicAuth removed in 3.9.47).
+
+====================================================================
+DESIGN INTENT
+====================================================================
+
+-   Single public HTTP entrypoint (Traefik)
+-   No direct container HTTP exposure
+-   Centralized DNS control via AdGuard
+-   Stable internal naming using a dedicated internal zone:
+    *.${LAN_DOMAIN}
+-   Host-based routing through Traefik (not port-based)
+-   Dashboard hardened and no longer exposed on :8080
+-   HTTPS migration phase 1 complete (websecure + self-signed LAN cert)
+-   ACME DNS-01 recommended for production certificates
+-   Git-backed “infrastructure-as-code” using Gitea + (current)
+    CLI-based deployments
+
+====================================================================
+TO-DO
+====================================================================
+
+1)  Hostname migration away from *.local ✅ COMPLETED
+
+2)  Align IPv6 DNS with AdGuard
+
+-   Configure FRITZ!Box to advertise AdGuard as DNS server for IPv6.
+
+3)  HTTPS migration (next phase)
+
+-   websecure (:443) implemented with self-signed LAN certificate.
+-   Use ACME DNS-01 challenge once timscloud.net is owned.
+-   Move Traefik dashboard to HTTPS-only entrypoint.
+
+4)  Hardening / hygiene
+
+-   Add shared middlewares via file provider (security headers,
+    redirects).
+-   Document backup strategy for Docker volumes and bind mounts.
+-   Consider LAN-only allowlist middleware for MeTube (since WAN :80 is
+    forwarded).
+-   Consider a persistent “management access” method for Portainer that
+    does not depend on Traefik (LAN-only host port + firewall), or keep
+    the temporary port disabled except during maintenance.
+-   NOTE (current state): Portainer removed; prefer documented CLI
+    procedures instead.
+
+====================================================================
+KNOWN CONSTRAINTS
+====================================================================
+
+-   Consumer hardware
+-   Behind NAT (no static public IP)
+-   Public access currently possible via MyFRITZ dynamic DNS
+-   No Kubernetes
+-   No orchestration beyond Docker Compose
+====================================================================
+STACK TOOLCHAIN (stack / stk / stackbackup)
+====================================================================
+
+Purpose:
+Standardize stack management and backups using centralized tooling
+located in:
+
+    /home/tim/stacks/bin/
+
+This toolchain replaces older ad-hoc wrapper scripts and provides a
+consistent operational interface.
+
+--------------------------------------------------------------------
+1) stack (PRIMARY CLI)
+--------------------------------------------------------------------
+
+The `stack` command is the primary orchestration interface for all
+Docker Compose stacks.
+
+Location:
+
+    ~/stacks/bin/stack
+
+Capabilities:
+
+    - Start stacks
+    - Stop stacks
+    - Restart stacks
+    - Pull images
+    - View logs
+    - List available stacks
+
+Stacks are automatically discovered from directories containing:
+
+    compose.yml
+
+Typical discovery locations:
+
+    ~/stacks/apps/*/compose.yml
+    ~/stacks/gateway/compose.yml
+
+Example commands:
+
+    stack list
+    stack up immich
+    stack down metube
+    stack restart gateway
+    stack logs immich
+    stack pull all
+
+Historical Note:
+
+Earlier versions of the infrastructure used:
+
+    ./stack
+
+This is now deprecated. The preferred command is:
+
+    stack
+
+--------------------------------------------------------------------
+2) stk (SHORTCUT WRAPPER)
+--------------------------------------------------------------------
+
+`stk` is a convenience wrapper that forwards commands to `stack`.
+
+Example:
+
+    stk up immich
+
+Equivalent to:
+
+    stack up immich
+
+Purpose:
+
+    - Faster typing
+    - Identical functionality
+
+--------------------------------------------------------------------
+3) stackbackup (STACK BACKUP TOOL)
+--------------------------------------------------------------------
+
+`stackbackup` creates compressed backups of stack directories.
+
+Location:
+
+    ~/stacks/bin/stack-tools.sh
+
+Backup format:
+
+    .tar.zst (zstd compressed archive)
+
+Usage:
+
+    cd ~/stacks/apps/yt2midi_v3
+    stackbackup
+
+Backup location:
+
+    ~/stacks/backups/apps/<stack>/
+
+Example:
+
+    ~/stacks/backups/apps/yt2midi_v3/
+        yt2midi_v3_2026-03-10_2142.tar.zst
+        yt2midi_v3_2026-03-10_2143.tar.zst
+
+Safety Mechanism:
+
+`stackbackup` only runs when executed inside:
+
+    ~/stacks/apps/<stack>
+
+This prevents accidental backups of unrelated directories.
+
+--------------------------------------------------------------------
+4) SHELL INTEGRATION
+--------------------------------------------------------------------
+
+Stack tooling is loaded via `.bashrc`.
+
+Configuration:
+
+    export PATH="$HOME/stacks/bin:$PATH"
+    source "$HOME/stacks/bin/stack-tools.sh"
+
+Reload shell after changes:
+
+    source ~/.bashrc
+
+Verification:
+
+    which stack
+    type stackbackup
+
+Expected output:
+
+    /home/tim/stacks/bin/stack
+    stackbackup is a function
+
+--------------------------------------------------------------------
+5) OPERATIONAL GUIDELINE
+--------------------------------------------------------------------
+
+Standard operational workflow:
+
+    stack pull all
+    stack up all
+
+Deploy single service:
+
+    stack up immich
+
+View logs:
+
+    stack logs immich
+
+Backup stack before modification:
+
+    cd ~/stacks/apps/immich
+    stackbackup
+====================================================================
+WORKFLOW (CLI-ENFORCED OPERATIONS)
+====================================================================
+
+NOTE (current state): - All deployments must use ./stack. - Env-file
+contract is enforced automatically. - Gateway redeploys follow the same
+rules as app stacks.
+
+1)  ADD A NEW APP
+
+STEP 1 — Create App Directory + Compose File Location:
+/home/tim/stacks/apps//compose.yml
+
+STEP 2 — Commit and Push cd /home/tim/stacks git add apps//compose.yml
+git commit -m “Add” git push
+
+STEP 3 — Deploy via Wrapper ./stack up
+
+STEP 4 — DNS If wildcard rewrite exists: *.${LAN_DOMAIN} →
+192.168.188.23
+
+Test: http://.${LAN_DOMAIN}
+
+2)  CHANGE AN EXISTING APP
+
+STEP 1 — Modify Compose File STEP 2 — Commit and Push STEP 3 — Redeploy
+./stack up
+
+Golden Rule: Git is the single source of truth. ./stack is the single
+deployment interface. Env-file correctness must never depend on human
+memory.
+
+====================================================================
+ALTERNATIVE WORKFLOW (WITHOUT WRAPPER) GOAL:
+====================================================================
+Provide a supported fallback workflow that does NOT require using
+./stack, while still keeping deployments deterministic and preventing
+“forgot the env-file” mistakes as much as possible.
+
+This workflow is intended for: - Emergency recovery - Minimal
+environments where the wrapper script is unavailable - Power users who
+prefer direct docker compose commands
+
+====================================================================
+CORE RULES (ENV-FILE CONTRACT)
+==================================================================== 1)
+Never run docker compose without explicitly supplying the required env
+files. 2) Use absolute paths when possible to avoid “wrong working
+directory” surprises. 3) Treat gateway and immich as “secrets-required”
+stacks (they interpolate secrets).
+
+Files: - /home/tim/stacks/shared/.env.global (committed; always
+required) - /home/tim/stacks/shared/.env.secrets (local-only; required
+for gateway + immich; may be used by others later)
+
+Important: - bcrypt hashes contain ‘′andmustbestoredwith′’ escaped as
+‘$$’ in .env files.
+
+====================================================================
+OPTION A — ROOT-BASED INVOCATION (RECOMMENDED MANUAL METHOD)
+====================================================================
+Always run commands from the repo root:
+
+cd /home/tim/stacks
+
+Non-secret-only stacks (example: iptvnator): docker compose –env-file
+/home/tim/stacks/shared/.env.global -f
+/home/tim/stacks/apps/iptvnator/compose.yml up -d
+
+Secrets-required stacks (gateway + immich): docker compose –env-file
+/home/tim/stacks/shared/.env.global –env-file
+/home/tim/stacks/shared/.env.secrets -f
+/home/tim/stacks/gateway/compose.yml up -d
+
+docker compose –env-file /home/tim/stacks/shared/.env.global –env-file
+/home/tim/stacks/shared/.env.secrets -f
+/home/tim/stacks/apps/immich/compose.yml up -d
+
+Config validation (before deploying): docker compose –env-file
+/home/tim/stacks/shared/.env.global –env-file
+/home/tim/stacks/shared/.env.secrets -f
+/home/tim/stacks/gateway/compose.yml config >/dev/null && echo OK
+gateway
+
+====================================================================
+OPTION B — SHELL ALIASES (MANUAL, LOW-FRICTION)
+==================================================================== Add
+to ~/.bashrc (or ~/.zshrc):
+
+alias dcg=‘docker compose –env-file /home/tim/stacks/shared/.env.global’
+alias dcu=‘docker compose –env-file /home/tim/stacks/shared/.env.global
+–env-file /home/tim/stacks/shared/.env.secrets’
+
+Usage: # non-secret-only stack dcg -f
+/home/tim/stacks/apps/iptvnator/compose.yml up -d
+
+secrets-required stack
+
+dcu -f /home/tim/stacks/gateway/compose.yml up -d dcu -f
+/home/tim/stacks/apps/immich/compose.yml up -d
+
+Why this works: - Eliminates “forgot env-file flags” for most cases -
+Still allows direct docker compose usage - Keeps secrets out of Git
+
+====================================================================
+OPTION C — MAKEFILE TARGETS (MANUAL, REPO-COMMITTED)
+====================================================================
+Create /home/tim/stacks/Makefile (safe to commit) that standardizes
+commands.
+
+Example targets: - make gateway-up - make immich-up - make
+iptvnator-up - make all-up - make gateway-config
+
+The Makefile should embed absolute paths to env files and compose files,
+and use a consistent project naming approach (either container_name in
+compose or explicit –project-name flags).
+
+Notes: - This is “not a wrapper script” from the user’s perspective;
+it’s an alternative interface that still prevents command drift. - Keep
+Makefile free of secrets (it only references env file paths).
+
+====================================================================
+SAFEGUARDS (APPLIES TO ALL MANUAL OPTIONS)
+==================================================================== 1)
+Validate before deploy: docker compose … config >/dev/null
+
+2)  Avoid partial env injection: If a stack interpolates ${LAN_DOMAIN},
+    ${TRAEFIK_DASHBOARD_AUTH}, or DB vars, you MUST include the env file
+    that defines them.
+
+3)  Prefer deterministic project isolation: If you see container name
+    conflicts, run with an explicit project name: docker compose
+    –project-name …
+
+====================================================================
+DECISION GUIDE
+==================================================================== -
+Normal operations: prefer ./stack - Manual operations needed (no wrapper
+available): use Option A or B - Want a repo-committed “standard
+interface” but not ./stack: use Option C (Makefile)
+
+
+====================================================================
+TARGET FLOW EXPLANATION (3.9.51)
+====================================================================
+
+This section formalizes the intended traffic model after HTTPS production migration.
+
+### LAN (DNS Challenge via Cloudflare + Let's Encrypt Production)
+
+Client (LAN) 
+→ AdGuard DNS 
+→ photos.timopoly.com resolves to 192.168.188.23 
+→ Traefik (:443 websecure) 
+→ Target Service (Docker container)
+
+Explanation:
+
+- AdGuard performs split-horizon DNS by rewriting *.${LAN_DOMAIN} or production hostnames directly to the Windows host LAN IP.
+- LAN clients never traverse Cloudflare or the public internet.
+- Traefik serves a valid public Let's Encrypt certificate even for LAN clients.
+- ACME validation occurs via DNS-01 (Cloudflare), not HTTP challenge, so no inbound port exposure is required.
+- This guarantees identical hostname usage for LAN and WAN without certificate mismatch.
+
+### WAN (Public Access via Cloudflare Tunnel)
+
+Client (Internet) 
+→ Cloudflare DNS 
+→ Cloudflare Edge 
+→ Cloudflare Tunnel 
+→ cloudflared (Docker) 
+→ Traefik (:443 websecure) 
+→ Target Service (Docker container)
+
+Explanation:
+
+- Public DNS is authoritative at Cloudflare.
+- No inbound ports are required on the router when using the tunnel model.
+- cloudflared establishes an outbound-only encrypted tunnel to Cloudflare.
+- Cloudflare forwards traffic through the tunnel to Traefik.
+- Traefik performs host-based routing and TLS termination (valid production certificate).
+- Authentik ForwardAuth is evaluated before request reaches the service (if middleware enabled).
+
+This architecture represents proper split-horizon DNS:
+
+- Internal DNS overrides ensure LAN clients use the shortest possible path.
+- External clients traverse Cloudflare edge infrastructure.
+- Both flows converge at Traefik for unified routing and authentication logic.
+
+
+====================================================================
+Infrastructure state (for future agents)
+====================================================================
+
+
+Stack  works like this:
+
+Internet
+   │
+Cloudflare Edge
+   │
+Cloudflare Tunnel (cloudflared)
+   │
+Traefik (gateway_traefik)
+   │
+Authentik forwardAuth middleware
+   │
+Docker service (iptvnator, immich, etc.)
+
+{
+  "document_name": "TIMOPOLY_STACK_ARCHITECTURE_2026-03-04.json",
+  "last_updated_utc": "2026-03-04",
+  "owner": "tim",
+  "domains": {
+    "base_domain": "timopoly.com",
+    "public_examples": ["auth.timopoly.com", "iptv.timopoly.com"],
+    "lan_only_policy": "LAN-only apps must NOT have Cloudflare DNS records and must be protected via Traefik lan-only middleware (and/or local DNS)."
+  },
+  "platform": {
+    "host_environment": "Docker on WSL2 (Linux)",
+    "primary_repo_root": "~/stacks",
+    "docker_networks": {
+      "proxy": {
+        "type": "external",
+        "purpose": "Shared reverse-proxy network used by Traefik, cloudflared, authentik outpost, and app containers.",
+        "cidr_observed": "172.18.0.0/16"
+      }
+    }
+  },
+  "edge_and_ingress": {
+    "cloudflare": {
+      "role": "Public DNS + TLS edge + routing to tunnel",
+      "required_settings": [
+        {
+          "name": "Always Use HTTPS",
+          "path": "Cloudflare Dashboard -> timopoly.com -> SSL/TLS -> Edge Certificates -> Always Use HTTPS",
+          "purpose": "Prevents Authentik/OIDC callback mismatches by forcing HTTP -> HTTPS at the edge before traffic reaches the tunnel."
+        }
+      ]
+    },
+    "cloudflare_tunnel": {
+      "tunnel_id": "5618b03c-abe5-4504-ab37-a3e2f4c70820",
+      "tunnel_name": "homelab-config",
+      "mode": "token-based (remote-managed tunnel using CLOUDFLARE_TUNNEL_TOKEN)",
+      "container": {
+        "name": "cloudflared",
+        "network": "proxy"
+      },
+      "files": {
+        "config_yml_path": "/home/tim/stacks/apps/cloudflared/config.yml",
+        "credentials_json_path": "/home/tim/stacks/apps/cloudflared/credentials.json",
+        "cert_pem_path": "/home/tim/stacks/apps/cloudflared/cert.pem"
+      },
+      "compose_file": "/home/tim/stacks/apps/cloudflared/compose.yml",
+      "origin_target": {
+        "service_name": "gateway_traefik",
+        "url": "https://gateway_traefik:443",
+        "tls_note": "Inside Docker network Traefik may present 'TRAEFIK DEFAULT CERT'; cloudflared originRequest.noTLSVerify is set to true to avoid internal TLS verification errors."
+      },
+      "ingress_policy": {
+        "type": "allowlist by hostname",
+        "current_ingress": [
+          {
+            "hostname": "auth.timopoly.com",
+            "service": "https://gateway_traefik:443",
+            "originRequest": {
+              "originServerName": "auth.timopoly.com",
+              "httpHostHeader": "auth.timopoly.com",
+              "noTLSVerify": true,
+              "headers": {
+                "X-Forwarded-Proto": "https"
+              }
+            }
+          },
+          {
+            "hostname": "iptv.timopoly.com",
+            "service": "https://gateway_traefik:443",
+            "originRequest": {
+              "originServerName": "iptv.timopoly.com",
+              "httpHostHeader": "iptv.timopoly.com",
+              "noTLSVerify": true,
+              "headers": {
+                "X-Forwarded-Proto": "https"
+              }
+            }
+          },
+          {
+            "service": "http_status:404",
+            "purpose": "Default deny (anything not explicitly listed returns 404)."
+          }
+        ],
+        "future_subdomains": "To publish a new app externally: (1) add Cloudflare DNS record, (2) add new cloudflared ingress hostname entry, (3) ensure Traefik router exists."
+      }
+    }
+  },
+  "reverse_proxy": {
+    "traefik": {
+      "container_name": "gateway_traefik",
+      "image": "traefik:v3.6.4",
+      "network": "proxy",
+      "entrypoints": {
+        "web": {
+          "port": 80,
+          "behavior": "Permanent redirect to websecure"
+        },
+        "websecure": {
+          "port": 443,
+          "behavior": "TLS enabled, default certresolver=cloudflare"
+        }
+      },
+      "acme": {
+        "method": "DNS-01 via Cloudflare",
+        "resolver_name": "cloudflare",
+        "storage_path": "/home/tim/stacks/gateway/acme/acme.json",
+        "email_env": "LETSENCRYPT_EMAIL",
+        "dns_api_token_env": "CF_DNS_API_TOKEN",
+        "note": "Wildcard cert is requested/maintained via Traefik."
+      },
+      "providers": {
+        "docker": {
+          "enabled": true,
+          "exposed_by_default": false,
+          "socket_mount": "/var/run/docker.sock:/var/run/docker.sock:ro"
+        },
+        "file": {
+          "directory": "/home/tim/stacks/gateway/dynamic",
+          "watch": false,
+          "note": "Because watch=false, restart gateway_traefik after editing dynamic YAML files."
+        }
+      },
+      "forwarded_headers": {
+        "trusted_ips": ["172.18.0.0/16"],
+        "purpose": "Trust X-Forwarded-* headers coming from cloudflared on the proxy network."
+      },
+      "dynamic_config_files": {
+        "authentik": "/home/tim/stacks/gateway/dynamic/authentik.yml",
+        "shared": "/home/tim/stacks/gateway/dynamic/shared.yml",
+        "transports": "/home/tim/stacks/gateway/dynamic/transports.yml"
+      }
+    }
+  },
+  "authentication": {
+    "authentik": {
+      "integration_type": "Traefik forwardAuth via Authentik outpost",
+      "outpost_service_name": "authentik_proxy",
+      "outpost_url_internal": "http://authentik_proxy:9000",
+      "traefik_dynamic": {
+        "file": "/home/tim/stacks/gateway/dynamic/authentik.yml",
+        "service_name": "authentik-outpost",
+        "middlewares": {
+          "authentik-forwardauth": {
+            "type": "forwardAuth",
+            "address": "http://authentik_proxy:9000/outpost.goauthentik.io/auth/traefik",
+            "trustForwardHeader": true,
+            "authResponseHeaders": [
+              "X-authentik-username",
+              "X-authentik-groups",
+              "X-authentik-email",
+              "X-authentik-name",
+              "X-authentik-uid"
+            ]
+          },
+          "authentik-errors": {
+            "type": "errors",
+            "status": ["401-403"],
+            "service": "authentik-outpost",
+            "query": "https://auth.${BASE_DOMAIN}/outpost.goauthentik.io/start?rd={url}"
+          },
+          "authentik-chain": {
+            "type": "chain",
+            "order": ["ak-https", "authentik-forwardauth", "authentik-errors"]
+          }
+        }
+      },
+      "https_scheme_fix": {
+        "problem": "OIDC/forwardAuth callback could fail (400) if login flow started on HTTP or if scheme headers were inconsistent through tunnel/proxies.",
+        "fix": [
+          "Cloudflare 'Always Use HTTPS' enabled (edge redirect)",
+          "Traefik dynamic middleware 'ak-https' forces forwarded HTTPS headers before forwardAuth"
+        ]
+      }
+    }
+  },
+  "lan_only_vs_public": {
+    "public_apps": {
+      "requirements": [
+        "Cloudflare DNS record exists for hostname",
+        "cloudflared ingress has explicit hostname entry",
+        "Traefik router exists (Host rule matches)",
+        "If protected: router applies authentik-chain@file middleware"
+      ],
+      "middlewares_recommended": ["authentik-chain@file"]
+    },
+    "lan_only_apps": {
+      "requirements": [
+        "No Cloudflare DNS record for hostname",
+        "Reachable via local DNS only (or hosts file)",
+        "Traefik router applies lan-only middleware (IP allowlist) and optionally authentik-chain depending on preference"
+      ],
+      "middlewares_recommended": ["lan-only@file (or a lan-only chain if defined)"]
+    }
+  },
+  "known_pitfalls_and_debug_playbook": {
+    "symptom_http_400_after_auth_login": {
+      "likely_causes": [
+        "HTTP -> HTTPS scheme mismatch during Authentik/OIDC callback",
+        "Missing/incorrect X-Forwarded-Proto handling through tunnel/proxies",
+        "HTTP access not redirected at the edge"
+      ],
+      "fixes": [
+        "Enable Cloudflare 'Always Use HTTPS'",
+        "Ensure Traefik uses ak-https before authentik-forwardauth"
+      ]
+    },
+    "symptom_traefik_404_page_not_found_for_known_host": {
+      "likely_causes": [
+        "Traefik file provider failed to load (dynamic YAML invalid)",
+        "Router not created (missing labels, wrong network, container down)"
+      ],
+      "checks": [
+        "docker logs gateway_traefik | grep -i \"Cannot start the provider|middleware .* does not exist\"",
+        "docker inspect <app> to confirm it is on network 'proxy' and has traefik.* labels"
+      ]
+    },
+    "symptom_file_provider_failed_node_field_not_found": {
+      "example": "field not found, node: ak-https",
+      "root_cause": "Bad YAML indentation/structure in dynamic config files",
+      "fix": "Ensure middlewares are siblings under http.middlewares (not nested under each other); restart Traefik because watch=false."
+    },
+    "basic_health_checks": {
+      "tunnel_logs": "docker logs cloudflared --tail=200 | egrep -i \"Starting tunnel|Registered tunnel connection|ERR|error\"",
+      "traefik_route_check_internal": "docker run --rm -it --network proxy curlimages/curl:8.12.1 curl -vk https://gateway_traefik:443 -H \"Host: <host>\" --max-time 10",
+      "external_headers_check": "curl -I https://<host> (expect 'server: cloudflare' and 302 to authentik when protected)"
+    }
+  },
+  "change_control_notes": {
+    "traefik_dynamic_files_watch": false,
+    "restart_required_after_dynamic_edit": "docker restart gateway_traefik",
+    "cloudflared_restart_command": "docker compose -f /home/tim/stacks/apps/cloudflared/compose.yml up -d --force-recreate"
+  }
+}
+
+====================================================================
+INCIDENTS AND SOLUTIONS (Structured for Future ChatGPT Agents)
+====================================================================
+
+{ “incident”: { “title”: “qbittorrentvpn unhealthy after BASE_DOMAIN
+migration”, “date”: “2026-02-27”, “stack”: “docker + traefik + gluetun +
+pia wireguard”, “environment”: “WSL2 + Docker Engine” }, “symptoms”: {
+“external_access”:
+“http://qbittorrent.${BASE_DOMAIN} returned 404", "container_status": "qbittorrentvpn_gluetun was unhealthy", "gluetun_logs": [ "lookup github.com: i/o timeout", "MTU discovery: connection might not be working at all", "restarting VPN because it failed to pass the healthcheck" ], "connectivity_test": "ping 1.1.1.1 inside gluetun failed" }, "initial_false_leads": [ "Traefik router misconfiguration", "BASE_DOMAIN migration issue", "Docker DNS configuration issue" ], "root_cause": { "description": "Stale/unreachable WireGuard endpoint in existing wg0.conf", "details": [ "WireGuard setup completed successfully", "Tunnel passed zero traffic", "Gluetun firewall blocked untunneled traffic", "Healthcheck failed due to DNS timeouts", "Container marked unhealthy" ], "important_note": "WireGuard reporting 'setup complete' does not guarantee working traffic flow." }, "diagnostic_procedure": [ { "step": "Test raw connectivity inside gluetun", "command": "ping -c1 1.1.1.1", "expected": "1 packet received", "failure_means": "Tunnel not passing traffic" }, { "step": "Check container health", "command": "docker ps | grep gluetun", "expected": "(healthy)" }, { "step": "Inspect gluetun logs", "indicator": "DNS timeouts + MTU not found errors" } ], "resolution": { "step_1": { "action": "Regenerate wg0.conf using thrnz/docker-wireguard-pia", "method": "Run generator container and extract /etc/wireguard/wg0.conf", "note": "Generator does NOT automatically write to host bind mount" }, "step_2": { "action": "Copy wg0.conf to stack bind directory", "path": "/home/tim/stacks/apps/qbittorrentvpn/wireguard-pia/wg0.conf" }, "step_3": { "action": "Restart qbittorrentvpn stack", "command": "./stack down qbittorrentvpn && ./stack up qbittorrentvpn" }, "step_4": { "validation": [ "ping 1.1.1.1 succeeds inside gluetun", "Container status shows healthy", "curl http://qbittorrent.${BASE_DOMAIN}
+returns 200” ] } }, “hardening_applied”: { “gluetun_config”: {
+“cap_add”: [“NET_ADMIN”, “SYS_MODULE”], “sysctls”:
+[“net.ipv4.conf.all.src_valid_mark=1”], “environment”: [
+“WIREGUARD_IMPLEMENTATION=userspace”, “FIREWALL=on”,
+“FIREWALL_INPUT_PORTS=8080” ] }, “traefik_config”: {
+“unique_router_name”: “qbittorrentvpn” } }, “lessons_learned”: [ “Always
+test raw IP connectivity before debugging DNS.”, “Gluetun unhealthy +
+DNS timeout usually means dead VPN tunnel.”, “Regenerating wg0.conf is
+the fastest fix for stale PIA endpoints.”, “Traefik 404 can be secondary
+to backend health issues.”, “Userspace WireGuard is more stable in
+WSL2.” ], “final_state”: { “tunnel”: “passing traffic”, “gluetun”:
+“healthy”, “traefik”: “routing correctly”, “qbittorrent_webui”: “HTTP
+200 OK” } }
+
+
+{
+  "report_id": "BUGFIX-2026-03-04-authentik-cloudflare-http-https",
+  "title": "Authentik login failure (HTTP -> HTTPS redirect) when accessed through Cloudflare Tunnel",
+  "environment": {
+    "host": "Docker on WSL2 (Linux)",
+    "reverse_proxy": "Traefik v3",
+    "authentication": "Authentik (forwardAuth via authentik outpost)",
+    "tunnel": "Cloudflare Tunnel (cloudflared container)",
+    "domain": "timopoly.com",
+    "public_apps_example": [
+      "auth.timopoly.com",
+      "iptv.timopoly.com"
+    ],
+    "internal_network": "docker network 'proxy'",
+    "important_services": {
+      "traefik": "gateway_traefik",
+      "authentik_outpost": "authentik_proxy",
+      "cloudflare_tunnel": "cloudflared"
+    }
+  },
+  "initial_problem": {
+    "symptoms": [
+      "https://iptv.timopoly.com worked normally",
+      "http://iptv.timopoly.com caused Authentik login but returned '400 Bad Request' after login",
+      "The error occurred at the Authentik callback URL",
+      "URL contained redirect state referencing http instead of https"
+    ],
+    "example_error_url": "https://auth.timopoly.com/outpost.goauthentik.io/callback?...&redirect=http://iptv.timopoly.com/",
+    "observed_behavior": [
+      "HTTPS access worked correctly",
+      "HTTP access failed after authentication",
+      "Traefik logs showed correct routing",
+      "Cloudflare tunnel logs showed healthy connections"
+    ]
+  },
+  "root_cause": {
+    "summary": "HTTP requests reaching Traefik via Cloudflare Tunnel caused Authentik to generate incorrect redirect state because the original request scheme was not consistently treated as HTTPS.",
+    "detailed_explanation": [
+      "The login flow started over HTTP when users accessed http://iptv.timopoly.com",
+      "Traefik redirected HTTP -> HTTPS, but Authentik's redirect state had already been generated",
+      "The redirect state therefore contained the HTTP origin",
+      "When Authentik finished authentication, it attempted to return to the HTTP URL",
+      "Cloudflare / Traefik rejected this due to scheme mismatch and security checks",
+      "This produced a 400 Bad Request error at the callback endpoint"
+    ]
+  },
+  "login_flow_before_fix": [
+    "User visits http://iptv.timopoly.com",
+    "Request goes to Cloudflare edge",
+    "Cloudflare forwards request through tunnel",
+    "Traefik receives HTTP request",
+    "Traefik redirects HTTP -> HTTPS",
+    "Authentik already generated redirect state with HTTP origin",
+    "After login Authentik redirects back to HTTP URL",
+    "Callback validation fails -> 400 Bad Request"
+  ],
+  "solution_overview": {
+    "strategy": "Ensure the entire login flow always starts with HTTPS so Authentik state contains the correct scheme.",
+    "method": "Force HTTP -> HTTPS redirect at the Cloudflare edge before the request enters the tunnel or Traefik."
+  },
+  "final_fix": {
+    "component": "Cloudflare Edge",
+    "location": "Cloudflare Dashboard",
+    "steps": [
+      "Open Cloudflare dashboard",
+      "Select domain timopoly.com",
+      "Navigate to SSL/TLS",
+      "Open Edge Certificates tab",
+      "Enable 'Always Use HTTPS'"
+    ],
+    "effect": "Cloudflare now redirects all HTTP requests to HTTPS before they reach the tunnel."
+  },
+  "login_flow_after_fix": [
+    "User visits http://iptv.timopoly.com",
+    "Cloudflare edge performs immediate redirect -> https://iptv.timopoly.com",
+    "HTTPS request enters Cloudflare Tunnel",
+    "cloudflared forwards request to Traefik",
+    "Traefik applies Authentik forwardAuth middleware",
+    "Authentik login flow begins using HTTPS origin",
+    "After login Authentik redirects correctly to https://iptv.timopoly.com",
+    "Application loads successfully"
+  ],
+  "related_configuration": {
+    "cloudflare_tunnel_config": {
+      "file": "/home/tim/stacks/apps/cloudflared/config.yml",
+      "current_configuration": {
+        "tunnel": "5618b03c-abe5-4504-ab37-a3e2f4c70820",
+        "credentials_file": "/etc/cloudflared/credentials.json",
+        "ingress": [
+          {
+            "hostname": "auth.timopoly.com",
+            "service": "https://gateway_traefik:443"
+          },
+          {
+            "hostname": "iptv.timopoly.com",
+            "service": "https://gateway_traefik:443"
+          },
+          {
+            "service": "http_status:404"
+          }
+        ]
+      }
+    },
+    "traefik_forward_auth_config": {
+      "file": "/home/tim/stacks/gateway/dynamic/authentik.yml",
+      "purpose": "Authentik forward authentication middleware",
+      "important_settings": {
+        "forward_auth_endpoint": "http://authentik_proxy:9000/outpost.goauthentik.io/auth/traefik",
+        "trusted_forward_headers": true
+      }
+    },
+    "traefik_https_header_fix": {
+      "file": "/home/tim/stacks/gateway/dynamic/shared.yml",
+      "middleware": "ak-https",
+      "configuration": {
+        "X-Forwarded-Proto": "https",
+        "X-Forwarded-Port": "443",
+        "X-Forwarded-Ssl": "on"
+      },
+      "purpose": "Ensures backend services see requests as HTTPS when behind proxy/tunnel"
+    }
+  },
+  "additional_issues_resolved_during_debugging": [
+    {
+      "issue": "Traefik dynamic config error: 'middleware authentik-chain@file does not exist'",
+      "cause": "Malformed YAML in shared.yml (ak-https nested incorrectly under lan-only)",
+      "resolution": "Corrected YAML structure so ak-https and lan-only are separate middlewares"
+    }
+  ],
+  "verification_steps": [
+    "curl -I https://iptv.timopoly.com -> returns HTTP 302 to Authentik login",
+    "Browser login completes successfully",
+    "HTTP requests automatically redirect to HTTPS",
+    "No more 400 errors from Authentik callback"
+  ],
+  "important_notes_for_future_maintainers": [
+    "Public services must exist in both Cloudflare DNS and cloudflared ingress configuration",
+    "LAN-only services should not have Cloudflare DNS entries",
+    "Traefik handles routing using Host rules",
+    "Authentik is integrated using forwardAuth middleware",
+    "Cloudflare Tunnel forwards traffic directly to Traefik over HTTPS",
+    "Cloudflare 'Always Use HTTPS' is required to avoid Authentik redirect state issues"
+  ],
+  "architecture_summary": {
+    "external_request_flow": [
+      "User Browser",
+      "Cloudflare Edge",
+      "Cloudflare Tunnel (cloudflared container)",
+      "Traefik Reverse Proxy",
+      "Authentik ForwardAuth",
+      "Docker Service"
+    ],
+    "internal_network": "All services communicate via Docker network 'proxy'"
+  },
+  "status": "resolved",
+  "date_resolved": "2026-03-04"
+}
+
+
+====================================================================
+LLM BOOT PROTOCOL
+====================================================================
+{
+  "document": "TIMOPOLY_LLM_BOOT_PROTOCOL",
+  "version": "1.0",
+  "owner": "tim",
+  "purpose": "Rapid context loading for ChatGPT agents working with the TIMOPOLY Docker infrastructure.",
+  "core_rules": [
+    "The docker-infra repository is the source of truth.",
+    "Deployments normally use the ./stack wrapper.",
+    "Do not modify unrelated parts of the architecture without asking.",
+    "Never assume defaults; consult the stack architecture document.",
+    "Traefik routing relies on Docker labels and the proxy network.",
+    "Services must not expose host ports unless explicitly documented."
+  ],
+  "environment": {
+    "host_os": "Windows 11",
+    "container_platform": "Docker Desktop",
+    "backend": "WSL2",
+    "linux_distro": "Ubuntu",
+    "containers": "Linux containers only",
+    "repo_root": "~/stacks"
+  },
+  "networking": {
+    "primary_network": {
+      "name": "proxy",
+      "type": "external_docker_network",
+      "purpose": "Shared reverse-proxy network used by Traefik, cloudflared, authentik outpost, and application containers."
+    },
+    "traffic_flows": {
+      "internet_flow": [
+        "Client",
+        "Cloudflare Edge",
+        "Cloudflare Tunnel",
+        "cloudflared container",
+        "Traefik reverse proxy",
+        "Authentik forwardAuth middleware",
+        "Docker service"
+      ],
+      "lan_flow": [
+        "LAN client",
+        "AdGuard DNS rewrite",
+        "Windows host IP",
+        "Traefik reverse proxy",
+        "Docker service"
+      ]
+    }
+  },
+  "domains": {
+    "base_domain": "timopoly.com",
+    "examples": [
+      "auth.timopoly.com",
+      "iptv.timopoly.com"
+    ],
+    "lan_only_policy": "LAN-only applications must not have Cloudflare DNS records and should use Traefik LAN-only middleware."
+  },
+  "dns": {
+    "server": "AdGuard Home",
+    "lan_rewrite_example": "*.timopoly.com -> 192.168.188.23"
+  },
+  "edge": {
+    "provider": "Cloudflare",
+    "critical_settings": [
+      {
+        "setting": "Always Use HTTPS",
+        "purpose": "Prevents Authentik login failures caused by HTTP/HTTPS mismatch."
+      }
+    ]
+  },
+  "cloudflare_tunnel": {
+    "container": "cloudflared",
+    "mode": "token",
+    "config_path": "~/stacks/apps/cloudflared/config.yml",
+    "origin_service": "https://gateway_traefik:443",
+    "ingress_policy": {
+      "type": "explicit_hostname_allowlist",
+      "examples": [
+        "auth.timopoly.com",
+        "iptv.timopoly.com"
+      ],
+      "default": "404"
+    }
+  },
+  "reverse_proxy": {
+    "software": "Traefik",
+    "container_name": "gateway_traefik",
+    "version": "v3",
+    "entrypoints": {
+      "web": {
+        "port": 80,
+        "behavior": "redirect_to_https"
+      },
+      "websecure": {
+        "port": 443,
+        "behavior": "primary_tls_entrypoint"
+      }
+    },
+    "tls": {
+      "provider": "Let's Encrypt",
+      "challenge": "DNS-01",
+      "dns_provider": "Cloudflare",
+      "acme_storage": "~/stacks/gateway/acme/acme.json"
+    },
+    "providers": {
+      "docker": {
+        "enabled": true,
+        "exposed_by_default": false
+      },
+      "file": {
+        "path": "~/stacks/gateway/dynamic/",
+        "watch": false,
+        "restart_required_after_change": true
+      }
+    }
+  },
+  "authentication": {
+    "system": "Authentik",
+    "integration": "Traefik forwardAuth",
+    "outpost_service": "authentik_proxy",
+    "forward_auth_endpoint": "http://authentik_proxy:9000/outpost.goauthentik.io/auth/traefik",
+    "middleware_chain": [
+      "ak-https",
+      "authentik-forwardauth",
+      "authentik-errors"
+    ],
+    "purpose_of_ak_https": "Ensures correct HTTPS headers when requests pass through Cloudflare tunnel."
+  },
+  "service_exposure": {
+    "default_model": "Traefik router via Docker labels",
+    "typical_labels": [
+      "traefik.enable=true",
+      "traefik.docker.network=proxy",
+      "traefik.http.routers.app.rule=Host(app.timopoly.com)",
+      "traefik.http.routers.app.entrypoints=websecure"
+    ],
+    "protected_services": {
+      "middleware_variable": "${TRAEFIK_AUTH_MIDDLEWARE}",
+      "resolved_value": "authentik-chain@file"
+    }
+  },
+  "lan_only_services": {
+    "requirements": [
+      "No Cloudflare DNS record",
+      "Not listed in cloudflared ingress",
+      "Protected with LAN-only middleware"
+    ],
+    "middleware_examples": [
+      "IP allowlist"
+    ]
+  },
+  "deployment": {
+    "standard_command": "./stack up <service>",
+    "example": "./stack up immich",
+    "workflow": [
+      "modify compose file",
+      "git commit",
+      "git push",
+      "deploy stack"
+    ],
+    "golden_rule": "Git repository is the source of truth."
+  },
+  "debugging": {
+    "tunnel_logs": "docker logs cloudflared",
+    "traefik_logs": "docker logs gateway_traefik",
+    "internal_routing_test": "docker run --rm -it --network proxy curlimages/curl curl -vk https://gateway_traefik -H 'Host: <hostname>'",
+    "external_test": "curl -I https://<hostname>"
+  },
+  "known_pitfalls": [
+    {
+      "problem": "Authentik login fails after authentication",
+      "cause": "HTTP to HTTPS scheme mismatch",
+      "fix": "Enable Cloudflare 'Always Use HTTPS'"
+    },
+    {
+      "problem": "Traefik returns 404 for valid host",
+      "possible_causes": [
+        "router not created",
+        "container not on proxy network",
+        "invalid dynamic config"
+      ]
+    },
+    {
+      "problem": "Traefik dynamic configuration fails",
+      "cause": "YAML indentation error",
+      "fix": "Correct YAML and restart gateway_traefik"
+    }
+  ],
+  "security_model": {
+    "trust_layers": [
+      "Internet",
+      "Cloudflare Edge",
+      "Cloudflare Tunnel",
+      "Traefik",
+      "Authentik",
+      "Docker Services"
+    ],
+    "public_exposure": [
+      "Cloudflare Edge",
+      "Cloudflare Tunnel"
+    ],
+    "note": "Router port forwarding is not required for public access when using the tunnel."
+  },
+  "agent_operating_principle": [
+    "Identify the affected stack before making changes.",
+    "Modify only the necessary compose or Traefik configuration.",
+    "Do not alter networking or authentication architecture without approval.",
+    "Assume Cloudflare Tunnel + Traefik + Authentik pipeline must remain intact."
+  ]
+}
+
+====================================================================
+TIMOPOLY_LLM_INFRASTRUCTURE_INDEX
+====================================================================
+{
+  "document": "TIMOPOLY_LLM_INFRASTRUCTURE_INDEX",
+  "version": "1.0",
+  "generated_date_utc": "2026-03-04",
+  "repo": {
+    "github_mirror": "Tim-Gradwohl/docker-infra",
+    "default_branch": "main",
+    "raw_base": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main"
+  },
+  "index_policy": {
+    "source_of_truth": "Public GitHub mirror raw files",
+    "note": "This index maps components to controlling repo files + the non-repo runtime-mounted files they reference.",
+    "runtime_paths_may_not_be_in_repo": true
+  },
+  "components": [
+    {
+      "component_id": "gateway.traefik",
+      "kind": "reverse_proxy",
+      "runtime_identity": {
+        "container_name": "gateway_traefik",
+        "image_hint": "traefik:v3.6.4"
+      },
+      "controls": [
+        {
+          "type": "compose",
+          "repo_path": "gateway/compose.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/gateway/compose.yml",
+          "responsibilities": [
+            "Traefik container definition",
+            "ports publication",
+            "providers configuration (docker + file)",
+            "dashboard router labels"
+          ]
+        },
+        {
+          "type": "dynamic_file_provider_dir",
+          "repo_path": "gateway/dynamic/",
+          "runtime_mount_target": "/etc/traefik/dynamic",
+          "responsibilities": [
+            "shared middlewares",
+            "authentik forwardAuth",
+            "serversTransports"
+          ]
+        }
+      ],
+      "runtime_mounts": [
+        {
+          "host_path": "/home/tim/stacks/gateway/dynamic",
+          "container_path": "/etc/traefik/dynamic",
+          "in_repo": true,
+          "note": "Mounted read-only in gateway/compose.yml"
+        }
+      ]
+    },
+    {
+      "component_id": "gateway.dynamic.shared_middlewares",
+      "kind": "traefik_dynamic_config",
+      "controls": [
+        {
+          "type": "dynamic_config",
+          "repo_path": "gateway/dynamic/shared.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/gateway/dynamic/shared.yml",
+          "responsibilities": [
+            "LAN allowlist middleware (lan-only)",
+            "ak-https header normalization middleware"
+          ]
+        }
+      ]
+    },
+    {
+      "component_id": "gateway.dynamic.authentik_forwardauth",
+      "kind": "traefik_dynamic_config",
+      "controls": [
+        {
+          "type": "dynamic_config",
+          "repo_path": "gateway/dynamic/authentik.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/gateway/dynamic/authentik.yml",
+          "responsibilities": [
+            "authentik-outpost service definition",
+            "authentik-forwardauth middleware",
+            "authentik-errors middleware",
+            "authentik-chain middleware ordering"
+          ]
+        }
+      ]
+    },
+    {
+      "component_id": "gateway.dynamic.transports",
+      "kind": "traefik_dynamic_config",
+      "controls": [
+        {
+          "type": "dynamic_config",
+          "repo_path": "gateway/dynamic/transports.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/gateway/dynamic/transports.yml",
+          "responsibilities": [
+            "serversTransports definitions (e.g., insecureSkipVerify for backends)"
+          ]
+        }
+      ]
+    },
+    {
+      "component_id": "shared.env.global",
+      "kind": "env_contract",
+      "controls": [
+        {
+          "type": "env_file",
+          "repo_path": "shared/.env.global",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/shared/.env.global",
+          "responsibilities": [
+            "global variables (TZ, PUID/PGID, LAN_DOMAIN, BASE_DOMAIN, paths)"
+          ]
+        }
+      ],
+      "notes": [
+        "Secrets live in shared/.env.secrets (expected local-only; not in repo)."
+      ]
+    },
+    {
+      "component_id": "edge.cloudflare_tunnel",
+      "kind": "tunnel",
+      "runtime_identity": {
+        "container_name": "cloudflared",
+        "image_hint": "cloudflare/cloudflared:latest"
+      },
+      "controls": [
+        {
+          "type": "compose",
+          "repo_path": "apps/cloudflared/compose.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/apps/cloudflared/compose.yml",
+          "responsibilities": [
+            "cloudflared container definition",
+            "proxy network attachment",
+            "mounts for config.yml + credentials.json"
+          ]
+        }
+      ],
+      "runtime_mounts": [
+        {
+          "host_path": "/home/tim/stacks/apps/cloudflared/config.yml",
+          "container_path": "/etc/cloudflared/config.yml",
+          "in_repo": "unknown_or_local",
+          "note": "Referenced by apps/cloudflared/compose.yml; may be local-only depending on repo policy."
+        },
+        {
+          "host_path": "/home/tim/stacks/apps/cloudflared/credentials.json",
+          "container_path": "/etc/cloudflared/credentials.json",
+          "in_repo": "unknown_or_local",
+          "note": "Likely local-only secret material."
+        }
+      ]
+    },
+    {
+      "component_id": "apps.authentik",
+      "kind": "auth",
+      "runtime_identity": {
+        "containers": [
+          "authentik_server",
+          "authentik_worker",
+          "authentik_postgres",
+          "authentik_redis",
+          "authentik_proxy"
+        ]
+      },
+      "controls": [
+        {
+          "type": "compose",
+          "repo_path": "apps/authentik/compose.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/apps/authentik/compose.yml",
+          "responsibilities": [
+            "Authentik core services",
+            "Outpost container used by Traefik forwardAuth",
+            "Traefik routing split: auth host vs outpost path prefix",
+            "TLS router settings for auth host"
+          ]
+        }
+      ],
+      "secrets_contract": [
+        "AUTHENTIK_SECRET_KEY (shared/.env.secrets)",
+        "AUTHENTIK_POSTGRES_PASSWORD (shared/.env.secrets)"
+      ]
+    },
+    {
+      "component_id": "apps.immich",
+      "kind": "app",
+      "controls": [
+        {
+          "type": "compose",
+          "repo_path": "apps/immich/compose.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/apps/immich/compose.yml",
+          "responsibilities": [
+            "immich server + db + redis + ML containers",
+            "Traefik router/service labels for photos.*",
+            "bind mounts + volumes for library + data"
+          ]
+        }
+      ],
+      "secrets_contract": [
+        "DB_PASSWORD (shared/.env.secrets)",
+        "DB_USERNAME (shared/.env.secrets)",
+        "DB_DATABASE_NAME (shared/.env.secrets)"
+      ]
+    },
+    {
+      "component_id": "apps.adguardhome",
+      "kind": "dns",
+      "controls": [
+        {
+          "type": "compose",
+          "repo_path": "apps/adguardhome/compose.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/apps/adguardhome/compose.yml",
+          "responsibilities": [
+            "DNS ports exposure (53/tcp, 53/udp)",
+            "Traefik routing to AdGuard UI",
+            "AdGuard data bind mounts"
+          ]
+        }
+      ],
+      "runtime_mounts": [
+        {
+          "host_path": "/home/tim/stacks/apps/adguardhome/data/work",
+          "container_path": "/opt/adguardhome/work",
+          "in_repo": false,
+          "note": "Runtime state"
+        },
+        {
+          "host_path": "/home/tim/stacks/apps/adguardhome/data/conf",
+          "container_path": "/opt/adguardhome/conf",
+          "in_repo": false,
+          "note": "Runtime config/state"
+        }
+      ]
+    },
+    {
+      "component_id": "apps.iptvnator",
+      "kind": "app",
+      "controls": [
+        {
+          "type": "compose",
+          "repo_path": "apps/iptvnator/compose.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/apps/iptvnator/compose.yml",
+          "responsibilities": [
+            "IPTVnator container",
+            "Traefik host rule + service port mapping",
+            "persistent volume for app data"
+          ]
+        }
+      ]
+    },
+    {
+      "component_id": "apps.metube",
+      "kind": "app",
+      "controls": [
+        {
+          "type": "compose",
+          "repo_path": "apps/metube/compose.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/apps/metube/compose.yml",
+          "responsibilities": [
+            "MeTube container",
+            "download bind mount",
+            "Traefik router/service labels"
+          ]
+        }
+      ],
+      "runtime_mounts": [
+        {
+          "host_path": "/mnt/d/Docker/metube/downloads",
+          "container_path": "/downloads",
+          "in_repo": false
+        }
+      ]
+    },
+    {
+      "component_id": "apps.gitea",
+      "kind": "git",
+      "controls": [
+        {
+          "type": "compose",
+          "repo_path": "apps/gitea/compose.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/apps/gitea/compose.yml",
+          "responsibilities": [
+            "Gitea service",
+            "Traefik router/service labels",
+            "volume for gitea /data"
+          ]
+        }
+      ]
+    },
+    {
+      "component_id": "apps.syncthing",
+      "kind": "sync",
+      "controls": [
+        {
+          "type": "compose",
+          "repo_path": "apps/syncthing/compose.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/apps/syncthing/compose.yml",
+          "responsibilities": [
+            "Syncthing service",
+            "L4 ports exposure for discovery/sync",
+            "Traefik routing for Web UI (8384)",
+            "optional Authentik middleware usage"
+          ]
+        }
+      ]
+    },
+    {
+      "component_id": "apps.qbittorrentvpn",
+      "kind": "vpn_app",
+      "controls": [
+        {
+          "type": "compose",
+          "repo_path": "apps/qbittorrentvpn/compose.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/apps/qbittorrentvpn/compose.yml",
+          "responsibilities": [
+            "Gluetun VPN gateway",
+            "qBittorrent behind gluetun network namespace",
+            "PIA WireGuard + port forwarding pipeline",
+            "Traefik routing for qBittorrent UI",
+            "port-sync automation (docker socket access)"
+          ]
+        }
+      ],
+      "runtime_mounts": [
+        {
+          "host_path": "/home/tim/stacks/apps/qbittorrentvpn/wireguard-pia/wg0.conf",
+          "container_path": "/gluetun/wireguard/wg0.conf",
+          "in_repo": false,
+          "note": "Local-only secret file; must never be committed."
+        }
+      ]
+    },
+    {
+      "component_id": "apps.yt2midi",
+      "kind": "gpu_app",
+      "controls": [
+        {
+          "type": "compose",
+          "repo_path": "apps/yt2midi/compose.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/apps/yt2midi/compose.yml",
+          "responsibilities": [
+            "yt2midi web service build + GPU enablement",
+            "data in/out bind mounts",
+            "Traefik routing"
+          ]
+        }
+      ]
+    },
+    {
+      "component_id": "apps.yt2midi_v2",
+      "kind": "gpu_app",
+      "controls": [
+        {
+          "type": "compose",
+          "repo_path": "apps/yt2midi_v2/compose.yml",
+          "raw_url": "https://raw.githubusercontent.com/Tim-Gradwohl/docker-infra/main/apps/yt2midi_v2/compose.yml",
+          "responsibilities": [
+            "yt2midi_v2 web service build + GPU enablement",
+            "data in/out bind mounts",
+            "Traefik routing (websecure + certresolver + Authentik middleware)"
+          ]
+        }
+      ]
+    }
+  ],
+  "missing_or_unverified": [
+    {
+      "repo_path": "gateway/dynamic/tls.yml",
+      "status": "not_found_on_github_mirror",
+      "note": "404 when fetched from raw; if you use a tls.yml locally, it may be uncommitted or renamed."
+    },
+    {
+      "repo_path": "apps/cloudflared/config.yml",
+      "status": "referenced_by_compose_but_not_verified_in_repo",
+      "note": "Compose references a host path; this file may be local-only depending on secrets policy."
+    },
+    {
+      "repo_path": "shared/.env.secrets",
+      "status": "expected_local_only",
+      "note": "Referenced contractually by multiple stacks; should remain uncommitted."
+    }
+  ],
+  "how_to_use": {
+    "agent_instructions": [
+      "When debugging a component, open its repo_path raw_url first.",
+      "If behavior differs from expected, check for local-only runtime files in runtime_mounts.",
+      "Traefik dynamic file provider has watch=false; after edits restart gateway_traefik.",
+      "Public exposure changes usually require BOTH cloudflared ingress updates and Traefik router labels."
+    ]
+  }
+}
+
+====================================================================
+YT2MIDI_V3 STACK (NEW IN 3.9.54)
+====================================================================
+
+Purpose:
+- Next-generation YouTube → MP3 + MIDI pipeline with improved separation
+  of web UI and backend processing.
+- Designed to keep UI lightweight while heavy processing runs in a
+  dedicated CUDA-enabled API container.
+
+Containers:
+- yt2midi_v3-ui
+- yt2midi_v3-api
+
+Architecture:
+- UI container:
+    nginx:alpine serving static web interface.
+- API container:
+    FastAPI backend using CUDA runtime image for GPU acceleration.
+
+Networks:
+- internal (UI ↔ API communication)
+- proxy (Traefik reverse proxy network)
+
+Traefik Routing:
+- traefik.enable=true
+- traefik.docker.network=proxy
+- Host(yt2midi-v3.${BASE_DOMAIN})
+- EntryPoint: websecure
+- TLS enabled (Cloudflare DNS resolver)
+- Backend service port: 80 (nginx UI)
+
+Access (current):
+- LAN / WAN: https://yt2midi-v3.${BASE_DOMAIN}
+
+Storage:
+- /home/tim/stacks/apps/yt2midi_v3/data/in -> /data/in
+- /home/tim/stacks/apps/yt2midi_v3/data/out -> /data/out
+
+Git Hygiene:
+- apps/yt2midi_v3/data/ ignored in Git (runtime artifacts only).

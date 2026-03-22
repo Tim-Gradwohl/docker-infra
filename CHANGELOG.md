@@ -15,6 +15,25 @@
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
 ---
 
+## 3.9.60 Docs Cleanup, Authentik README, and Breakglass Removal
+
+### Added
+- `apps/authentik/README.md` documenting the checked-in Authentik stack config
+
+### Changed
+- `docs/README.md` now links only to documentation files that currently exist in the repo
+
+### Removed
+- `apps/breakglass/compose.yml`
+- `apps/breakglass/` stack directory
+
+### Notes
+- This entry records only changes made in the current session
+- `bin/generate-service-catalog` and `docs/architecture/service-catalog.md` exist in the repo but are not yet integrated into application stacks
+- service-catalog metadata/output flow is documented, but current consumers are not wired to use it
+
+---
+
 ## 3.9.59 Infrastructure Policy & AI-Agent Enablement
 
 ### Added
@@ -387,4 +406,3 @@
 * Redirect behavior
 * Required host alignment
 * Outpost routing requirements
-

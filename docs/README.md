@@ -5,9 +5,19 @@
 * [Overview](./architecture/overview.md)
 * [Networking](./architecture/networking.md)
 * [Ingress (Cloudflare + Traefik)](./architecture/ingress-cloudflare-traefik.md)
+* [Gateway](./architecture/gateway.md)
 * [Authentik](./architecture/authentik.md)
-* [Exposure Model](./architecture/exposure-model.md)
-* [Trust Boundaries](./architecture/trust-boundaries.md)
+* [Service Catalog](./architecture/service-catalog.md)
+
+## Policies
+
+* [Compose Contract](./policies/compose-contract.md)
+* [Routing Contract](./policies/routing-contract.md)
+* [Environment Contract](./policies/env-contract.md)
+
+## Checklists
+
+* [New Stack Checklist](./checklists/new-stack.md)
 
 ## Tooling
 
@@ -15,19 +25,14 @@
 
 ## Runbooks
 
-* [Deployments](./runbooks/deployments.md)
+* [Public App Publish](./runbooks/public-app-publish.md)
 * [qBittorrentVPN Recovery](./runbooks/qbittorrentvpn-recovery.md)
-* [Traefik Debug](./runbooks/traefik-debug.md)
-* [Authentik Debug](./runbooks/authentik-debug.md)
+* [Traefik Debug](./runbooks/debug-traefik.md)
 
 ## Reference
 
-* [Stack Structure](./reference/stack-structure.md)
-* [Storage](./reference/storage.md)
-* [Constraints](./reference/constraints.md)
+* [Known Exceptions](./reference/known-exceptions.md)
 
-## Incidents
+## Context
 
-* [qBittorrentVPN Dead Tunnel](./incidents/2026-02-27-qbittorrentvpn.md)
-* [Authentik HTTPS Issue](./incidents/2026-03-04-authentik.md)
-
+* [Historical Stack Context](./context/docker_stack_v3.9.57.txt)

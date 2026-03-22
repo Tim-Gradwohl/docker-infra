@@ -16,6 +16,23 @@ If required context is missing, mark the claim or action as **UNVERIFIED** and r
 
 ---
 
+## Codex workflow
+
+When working in this repo:
+
+1. Read `AGENTS.md`, then relevant docs under `docs/policies/` and `docs/runbooks/`.
+2. For infra changes, classify the stack as public, LAN-only, or internal-only before editing.
+3. Prefer plan-first for multi-file or routing-related changes.
+4. After changes:
+   - run `bin/validate-compose-policy.sh ..` from `bin/`, or from repo root run `bin/validate-compose-policy.sh`
+   - review the diff
+   - update docs if behavior or policy changed
+   - update CHANGELOG.md only when the change is user- or operator-relevant
+5. Do not touch `service-catalog`; it is out of scope unless explicitly requested.
+
+---
+
+
 ## Authority and source of truth
 
 1. **Git is the source of truth**
@@ -94,6 +111,19 @@ These are non-negotiable unless the task explicitly states otherwise.
 - Keep changelog entries concise and scoped to actual changes.
 - Do not rewrite historical changelog entries except for clear factual correction.
 - Do not place long runbooks or incident narratives into CHANGELOG.md.
+
+---
+
+## Historical context source
+
+`docs/context/docker_stack_v3.9.57.txt` is a historical design and operations context file.
+Use it as supplemental context for architecture, runbooks, and migration intent.
+
+Rules:
+- Treat checked-in repo files as the primary source of truth.
+- Use `docs/context/docker_stack_v3.9.57.txt` to extract missing operational context, invariants, and failure modes.
+- If the historical file conflicts with current checked-in files, prefer current checked-in files and note the drift.
+- Do not rewrite the repo to match the historical file without explicit instruction.
 
 ---
 
