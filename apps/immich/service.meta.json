@@ -1,0 +1,13 @@
+{
+  "photos.timopoly.com": {
+    "name": "Immich",
+    "description": "Photos and videos",
+    "category": "Media",
+    "icon": "camera",
+    "order": 20,
+    "tags": [
+      "photos",
+      "gallery"
+    ]
+  }
+}

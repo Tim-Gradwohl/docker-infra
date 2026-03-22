@@ -1,0 +1,13 @@
+{
+  "metube.timopoly.com": {
+    "name": "MeTube",
+    "description": "Video and audio downloads",
+    "category": "Media",
+    "icon": "download",
+    "order": 40,
+    "tags": [
+      "youtube",
+      "downloads"
+    ]
+  }
+}

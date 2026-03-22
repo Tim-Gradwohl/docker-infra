@@ -186,6 +186,7 @@ Public apps must:
 - enable TLS
 - use the intended certificate resolver
 - follow the repo’s public edge path
+- provide a checked-in `apps/<stack>/service.meta.json` for landing/service-catalog presentation metadata
 
 ### LAN-only routing
 
@@ -243,6 +244,69 @@ Rules:
 - stack-local `.env` should contain only stack-specific values
 - shared values belong in shared env contracts
 - examples should be provided when setup requires local values
+
+---
+
+## Service catalog metadata contract
+
+Public apps must provide a checked-in metadata file at:
+
+```text
+apps/<stack>/service.meta.json
+```
+
+Purpose:
+
+- define human-facing presentation metadata for landing and other catalog consumers
+- keep service discovery in Cloudflare and presentation data in Git
+
+Rules:
+
+- required for public stacks
+- optional for LAN-only stacks
+- not required for internal-only stacks unless they are intentionally cataloged
+- keyed by exact published hostname
+- must contain a top-level JSON object
+- values must be JSON objects with presentation fields only
+
+Supported fields:
+
+- `name`
+- `description`
+- `icon`
+- `category`
+- `order`
+- `tags`
+- `notes`
+
+Template:
+
+```json
+{
+  "app.example.com": {
+    "name": "Example App",
+    "description": "Short human-facing summary",
+    "icon": "app-icon",
+    "category": "Category",
+    "order": 30,
+    "tags": [
+      "keyword1",
+      "keyword2"
+    ],
+    "notes": "Optional extra context"
+  }
+}
+```
+
+Rules for values:
+
+- `name` should be the display name shown to humans
+- `description` should be short and readable in card/list UIs
+- `icon` should be a stable symbolic identifier, not binary data
+- `category` should be broad and human-readable
+- `order` should be a stable integer used for sort priority
+- `tags` should be short search-friendly labels
+- `notes` should be optional and concise
 
 ---
 

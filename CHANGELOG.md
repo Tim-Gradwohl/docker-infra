@@ -15,6 +15,25 @@
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
 ---
 
+## 3.9.63 Per-Stack Service Metadata Policy
+
+### Added
+- per-stack `service.meta.json` files for the current public stacks under `apps/`
+- public-stack creation guidance for `service.meta.json` in `docs/checklists/new-stack.md`
+- service-catalog metadata contract and template in `docs/policies/compose-contract.md`
+
+### Changed
+- `bin/generate-service-catalog` now aggregates metadata from `apps/*/service.meta.json`
+- `docs/architecture/service-catalog.md` now documents the per-stack metadata model and `CF_SERVICE_CATALOG_META_DIR`
+
+### Removed
+- `apps/landing/services.meta.json` in favor of per-stack `service.meta.json` files
+
+### Notes
+- public stack presentation metadata now lives with each stack instead of a single landing-owned file
+
+---
+
 ## 3.9.62 Landing Shared Catalog Integration
 
 ### Changed

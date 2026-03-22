@@ -63,6 +63,10 @@ Expected minimum files:
 - `compose.yml`
 - `README.md`
 
+For public stacks, also create:
+
+- `service.meta.json`
+
 Add a local `.env` only if the stack truly has stack-specific variables.
 
 ---
@@ -244,6 +248,44 @@ Minimum README content:
 - any exceptions to repo policy
 
 The README should explain the stack without forcing the reader to reverse-engineer Compose.
+
+---
+
+## 12a. Add service catalog metadata for public stacks
+
+If the stack is a public app, create:
+
+```text
+apps/<stack>/service.meta.json
+```
+
+This file is required for public stacks so landing and other service-catalog consumers have stable human-facing metadata.
+
+Minimum template:
+
+```json
+{
+  "app.example.com": {
+    "name": "Example App",
+    "description": "Short human-facing summary",
+    "icon": "app-icon",
+    "category": "Category",
+    "order": 30,
+    "tags": [
+      "keyword1",
+      "keyword2"
+    ]
+  }
+}
+```
+
+Verify:
+
+- hostname key matches the intended published hostname exactly
+- `name` is the human display name
+- `description` is concise
+- `order` is intentional
+- tags are short and useful for search/filtering
 
 ---
 

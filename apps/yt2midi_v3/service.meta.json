@@ -1,0 +1,13 @@
+{
+  "yt2midi-v3.timopoly.com": {
+    "name": "YT2MIDI",
+    "description": "Convert YouTube audio into MIDI",
+    "category": "Audio",
+    "icon": "music",
+    "order": 50,
+    "tags": [
+      "midi",
+      "conversion"
+    ]
+  }
+}

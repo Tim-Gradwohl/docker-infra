@@ -24,7 +24,7 @@ SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
 ROOT_DIR = SCRIPT_DIR.parent
 DEFAULT_SECRETS_FILE = ROOT_DIR / "shared" / ".env.secrets"
 DEFAULT_OUTPUT = pathlib.Path("~/stacks/shared/service-catalog/services.json").expanduser()
-DEFAULT_META = pathlib.Path("~/stacks/apps/landing/services.meta.json").expanduser()
+DEFAULT_META_DIR = ROOT_DIR / "apps"
 DEFAULT_CHANGE_LOG = ROOT_DIR / "state" / "logs" / "service-catalog-changes.log"
 DEFAULT_TIMEOUT = 20
 DEFAULT_OUTPUT_MODE = 0o644
@@ -112,9 +112,7 @@ def cf_request(path: str, token: str, timeout: int) -> Dict[str, Any]:
     return payload
 
 
-def load_metadata(meta_path: pathlib.Path) -> Dict[str, Dict[str, Any]]:
-    if not meta_path.exists():
-        return {}
+def load_metadata_file(meta_path: pathlib.Path) -> Dict[str, Dict[str, Any]]:
     try:
         with meta_path.open("r", encoding="utf-8") as handle:
             data = json.load(handle)
@@ -129,6 +127,17 @@ def load_metadata(meta_path: pathlib.Path) -> Dict[str, Dict[str, Any]]:
         if isinstance(hostname, str) and isinstance(value, dict):
             validated[hostname] = value
     return validated
+
+
+def load_metadata(meta_dir: pathlib.Path) -> Dict[str, Dict[str, Any]]:
+    if not meta_dir.exists():
+        return {}
+
+    merged: Dict[str, Dict[str, Any]] = {}
+    for meta_path in sorted(meta_dir.glob("*/service.meta.json")):
+        for hostname, value in load_metadata_file(meta_path).items():
+            merged[hostname] = value
+    return merged
 
 
 def write_json_atomic(output_path: pathlib.Path, payload: Dict[str, Any]) -> None:
@@ -265,11 +274,11 @@ def main() -> int:
     token = env_required("CLOUDFLARE_API_TOKEN")
     account_id = env_required("CLOUDFLARE_ACCOUNT_ID")
     output_path = env_path("CF_SERVICE_CATALOG_OUTPUT", DEFAULT_OUTPUT)
-    meta_path = env_path("CF_SERVICE_CATALOG_META", DEFAULT_META)
+    meta_dir = env_path("CF_SERVICE_CATALOG_META_DIR", DEFAULT_META_DIR)
     change_log_path = env_path("CF_SERVICE_CATALOG_CHANGE_LOG", DEFAULT_CHANGE_LOG)
     timeout = env_int("CF_SERVICE_CATALOG_TIMEOUT", DEFAULT_TIMEOUT)
 
-    metadata = load_metadata(meta_path)
+    metadata = load_metadata(meta_dir)
     tunnel_payload = cf_request(f"/accounts/{account_id}/cfd_tunnel", token, timeout)
     tunnels = tunnel_payload.get("result", [])
     if not isinstance(tunnels, list):

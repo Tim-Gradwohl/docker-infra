@@ -1,0 +1,12 @@
+{
+  "www.timopoly.com": {
+    "name": "Timopoly",
+    "description": "Public service index",
+    "category": "Portal",
+    "icon": "home",
+    "order": 0,
+    "tags": [
+      "landing"
+    ]
+  }
+}

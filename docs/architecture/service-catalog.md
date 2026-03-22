@@ -34,17 +34,17 @@ Override with:
 
 ## Metadata location
 
-Recommended source-controlled metadata path:
+Recommended source-controlled metadata pattern:
 
-- `apps/landing/services.meta.json`
+- `apps/<stack>/service.meta.json`
 
 Default metadata lookup:
 
-- `~/stacks/apps/landing/services.meta.json`
+- `~/stacks/apps/*/service.meta.json`
 
-Override with:
+Override the base directory with:
 
-- `CF_SERVICE_CATALOG_META`
+- `CF_SERVICE_CATALOG_META_DIR`
 
 ## Required environment
 
@@ -67,13 +67,13 @@ Optional:
 
 - `CF_SERVICE_CATALOG_ENV_FILE` -> path to an env file used to populate missing variables
 - `CF_SERVICE_CATALOG_CHANGE_LOG` -> path to an append-only change log for added/removed hostnames
-- `CF_SERVICE_CATALOG_META` -> path to metadata JSON keyed by hostname
+- `CF_SERVICE_CATALOG_META_DIR` -> base directory scanned for `apps/*/service.meta.json`
 - `CF_SERVICE_CATALOG_OUTPUT` -> output path for generated catalog
 - `CF_SERVICE_CATALOG_TIMEOUT` -> request timeout in seconds
 
 ## Example metadata file
 
-Use a separate metadata file to curate labels, icons, grouping, and sort order without putting presentation concerns into Cloudflare.
+Use per-stack metadata files to curate labels, icons, grouping, and sort order without putting presentation concerns into Cloudflare.
 
 ```json
 {
@@ -96,17 +96,20 @@ Use a separate metadata file to curate labels, icons, grouping, and sort order w
 
 ## Cron example
 
+Example file location:
+
+- `apps/immich/service.meta.json`
+
 Run every 10 minutes as the same operator account that already manages the repo checkout:
 
 ```cron
 */10 * * * * mkdir -p /home/tim/stacks/state/logs && cd /home/tim/stacks && /usr/bin/env \
-  CF_SERVICE_CATALOG_META=/home/tim/stacks/apps/landing/services.meta.json \
   CF_SERVICE_CATALOG_OUTPUT=/home/tim/stacks/shared/service-catalog/services.json \
   /usr/bin/python3 /home/tim/stacks/bin/generate-service-catalog \
   >> /home/tim/stacks/state/logs/service-catalog.log 2>&1
 ```
 
-This relies on the script's default `shared/.env.secrets` lookup. If secrets live elsewhere, set `CF_SERVICE_CATALOG_ENV_FILE` in the cron environment.
+This relies on the script's default `shared/.env.secrets` lookup and the default `apps/*/service.meta.json` metadata scan. If secrets or metadata live elsewhere, set `CF_SERVICE_CATALOG_ENV_FILE` or `CF_SERVICE_CATALOG_META_DIR` in the cron environment.
 The script skips rewriting the JSON file when the catalog content is unchanged.
 When the catalog changes, it appends a hostname-level summary to `state/logs/service-catalog-changes.log` by default.
 
@@ -166,7 +169,7 @@ This pattern avoids a live dependency on the Cloudflare API inside the landing a
 
 ## Practical next steps
 
-1. Add `apps/landing/services.meta.json` for curated titles, icons, categories, and order.
+1. Add `apps/<stack>/service.meta.json` files for curated titles, icons, categories, and order.
 2. Mount `/home/tim/stacks/shared/service-catalog` read-only into the landing stack.
 3. Make the landing UI read `/shared/service-catalog/services.json`.
 4. Add a small freshness warning in the UI using `generated_at`.

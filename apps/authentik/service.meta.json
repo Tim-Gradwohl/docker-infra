@@ -1,0 +1,13 @@
+{
+  "auth.timopoly.com": {
+    "name": "Authentik",
+    "description": "Authentication and single sign-on",
+    "category": "Identity",
+    "icon": "shield",
+    "order": 10,
+    "tags": [
+      "auth",
+      "sso"
+    ]
+  }
+}
