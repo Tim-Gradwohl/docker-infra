@@ -1,396 +1,237 @@
-# AGENTS.md — TIMOPOLY DOCKER INFRA
+# AGENTS.md — docker-infra policy and constraints
 
-## PURPOSE
+## Purpose
 
-This file defines how AI agents must behave when working with this repository.
+This file defines the operating policy for AI agents working in this repository.
 
-It is NOT a full documentation source.
-It is a **behavior + rules layer**.
+It is a **behavior + constraints layer**, not full documentation.
+For architecture and implementation details, use:
 
-For architecture and implementation details, refer to:
+- `ai-context.md`
+- `docs/`
+- `apps/*/README.md`
+- `gateway/README.md`
 
-* `ai-context.md`
-* `docs/`
-* `apps/*/README.md`
-
----
-
-## CORE PRINCIPLES
-
-* **Git is the single source of truth**
-* **`stack` is the only deployment interface**
-* **Do not rely on memory — verify everything**
-* **Do not modify unrelated parts of the system**
-* **Prefer minimal, targeted changes**
+If required context is missing, mark the claim or action as **UNVERIFIED** and request the exact file(s) needed.
 
 ---
 
-## REPO STRUCTURE
+## Authority and source of truth
 
-```text
-apps/     → Docker Compose stacks (source of truth)
-gateway/  → Traefik + dynamic configuration
-bin/      → host-level tooling (stack CLI, watchdogs)
-state/    → runtime state (logs, watchdog state)
-shared/   → environment + secrets
-docs/     → architecture, runbooks, reference
-```
+1. **Git is the source of truth**
+   - Only claim behavior that is supported by checked-in files or explicitly provided runtime output.
+   - Do not rely on memory.
+   - Do not infer undocumented behavior from naming alone.
 
-Rules:
+2. **`stack` is the only deployment interface**
+   - Use `stack` / `stk` for normal operations.
+   - Raw `docker compose` is deprecated except when documenting recovery procedures or when a task explicitly requires lower-level commands.
 
-* Stack-specific documentation belongs in `apps/<stack>/README.md`
-* Cross-cutting documentation belongs in `docs/`
-* AI context is provided via `ai-context.md`
-
-### Context expansion
-
-If additional context is required:
-
-1. Use ai-context.md to identify relevant files
-2. Request those files explicitly
-3. Do NOT assume behavior not supported by provided files
+3. **Scope must stay narrow**
+   - Only change files required for the task.
+   - Do not refactor unrelated stacks.
+   - Do not rewrite large documentation sections without need.
 
 ---
 
-## DEPLOYMENT RULES
+## Repo map
 
-### Primary interface
-
-Always use:
-
-```bash
-stack <command> <stack>
-```
-
-Examples:
-
-```bash
-stack up immich
-stack down metube
-stack logs qbittorrentvpn
-stack list
-```
-
-Shortcut:
-
-```bash
-stk <command>
-```
+apps/      -> Docker Compose stacks  
+gateway/   -> Traefik + dynamic configuration  
+bin/       -> host-level tooling and watchdogs  
+state/     -> runtime state, logs, watchdog state  
+shared/    -> env contracts and secrets  
+docs/      -> architecture, runbooks, incidents, reference  
 
 ---
 
-### Forbidden (unless explicitly required)
+## Hard constraints
 
-* Running raw `docker compose` without env files
-* Ad-hoc container manipulation outside stack tooling
-* Modifying running containers directly
+These are non-negotiable unless the task explicitly states otherwise.
 
----
+### Deployment and execution
 
-## ENVIRONMENT CONTRACT
+- Do not bypass `stack` for routine deploy/update/log/status operations.
+- Do not modify running containers directly as a substitute for source changes.
+- Do not treat local runtime state as source of truth.
+- Do not commit generated files, secrets, or machine-local artifacts.
 
-Required env files:
+### Networking and exposure
 
-* `shared/.env.global` (always)
-* `shared/.env.secrets` (when required)
+- All HTTP(S) traffic must go through Traefik.
+- Only gateway components may publish public HTTP(S) ports.
+- Services routed by Traefik must join the external `proxy` network.
+- Internal backends must not join `proxy` unless there is a verified routing need.
+- Do not expose container ports directly unless the service is intentionally non-Traefik and the reason is explicit.
+- Databases and internal-only service ports must never be exposed externally.
 
-Rules:
+### Routing
 
-* Never assume env variables exist
-* If a variable is required, ensure fail-fast (`${VAR:?}`)
-* Never hardcode secrets into compose files
-* Never commit secrets
+- Traefik labels belong on the service that Traefik actually routes to.
+- Set `traefik.enable=true` only on intentionally routed services.
+- Routed services on `proxy` must set `traefik.docker.network=proxy`.
+- Public host rules must use explicit host-based routing.
+- LAN-only services must use LAN-only routing and must not be silently made public.
 
----
+### Authentication
 
-## CHANGE POLICY
+- Authentik is enforced through Traefik ForwardAuth.
+- Never apply the auth middleware to Authentik itself.
+- Outpost endpoints must route correctly to `authentik_proxy`.
+- HTTPS must be enforced before auth flow for public services.
 
-When making changes:
+### Environment and secrets
 
-1. **Scope strictly to the task**
-2. Do NOT refactor unrelated areas
-3. Preserve document integrity
-4. Follow existing patterns
+- Assume `shared/.env.global` is always required.
+- Assume `shared/.env.secrets` is required when secret-backed variables are used.
+- Never hardcode secrets into compose, docs, or scripts.
+- Use fail-fast interpolation for required variables: ${VAR:?message}.
+- Never assume an env var exists unless verified in repo context.
 
-If a structural improvement is desired:
-→ ask before applying
+### Documentation and changelog
 
----
-
-## DOCUMENTATION RULES
-
-When updating documentation:
-
-* Do NOT rewrite large sections unnecessarily
-* Only update sections affected by the change
-* Keep changelog entries accurate and scoped
-
-### Changelog policy
-
-* Only update the latest version section
-* Do NOT modify historical entries
-* Do NOT remove unrelated sections
+- Only update docs affected by the task.
+- Keep changelog entries concise and scoped to actual changes.
+- Do not rewrite historical changelog entries except for clear factual correction.
+- Do not place long runbooks or incident narratives into CHANGELOG.md.
 
 ---
 
-## STACK RULES
+## System contracts
 
-* Stacks are discovered via `compose.yml`
-* Located under:
+### Public app contract
 
-  * `apps/*/compose.yml`
-  * `gateway/compose.yml`
+A public HTTP app is expected to satisfy all of the following:
 
-Rules:
+- reachable through Cloudflare DNS / Tunnel / Traefik path
+- routed by Traefik on the proxy network
+- uses explicit Traefik router labels
+- uses HTTPS before auth flow
+- uses the shared auth middleware unless explicitly exempted
+- does not publish its own HTTP port directly
 
-* Do not rename stacks arbitrarily
-* Do not change stack names without reason
-* Keep parameterization consistent (`${APP_ID}`, etc.)
+### LAN-only app contract
 
----
+A LAN-only app is expected to satisfy all of the following:
 
-## NETWORKING RULES
+- reachable only through local DNS / local host mapping
+- routed by Traefik with LAN-only middleware
+- not added to public DNS / public tunnel ingress by default
 
-* All HTTP traffic must go through Traefik
-* Services must attach to `proxy` network for routing
-* Do NOT expose container ports directly unless required
+### Backend/internal service contract
 
----
+An internal backend is expected to satisfy all of the following:
 
-## AUTHENTICATION RULES
-
-* Authentik is enforced via Traefik ForwardAuth
-
-Rules:
-
-* NEVER apply auth middleware to Authentik itself
-* Ensure correct routing for outpost endpoints
-* HTTPS must be enforced before auth flow
+- no Traefik labels unless directly routed
+- no direct public exposure
+- no proxy network attachment unless verified necessary
+- only the minimum networks required for function
 
 ---
 
-## CHANGELOG RULES
+## Preferred Compose patterns
 
-`CHANGELOG.md` is a repo-wide infrastructure history file.
+- name: ${APP_ID}
+- restart: unless-stopped
+- one routed frontend service carrying Traefik labels
+- internal-only backend services on internal
+- proxy only on the routed service
+- explicit healthchecks where meaningful
+- security_opt: [no-new-privileges:true] where compatible
 
-### Location
-- The changelog file lives at repo root:
-  - `CHANGELOG.md`
+Avoid by default:
 
-### Update model
-- Always add the newest release entry at the top of the file, directly below the changelog header/rules block.
-- Do NOT append new releases at the bottom.
-- Do NOT create separate changelog files per version, stack, or feature.
-
-### Scope rules
-Only record meaningful infrastructure-level changes, such as:
-- new stacks
-- new tooling or commands
-- routing / proxy / auth changes
-- deployment model changes
-- major operational fixes
-- removals of files, stacks, or workflows
-- important operator-facing notes
-
-Do NOT record:
-- minor wording changes
-- formatting-only edits
-- trivial refactors
-- raw implementation details better suited for stack docs or runbooks
-- full procedures or incident narratives
-
-### Section format
-Use this structure for each version:
-
-## <version> — <YYYY-MM-DD>
-
-### Added
-- ...
-
-### Changed
-- ...
-
-### Fixed
-- ...
-
-### Removed
-- ...
-
-### Notes
-- ...
-
-Only include sections that actually have content.
-
-### Writing style
-- Write concise, outcome-focused bullets.
-- Prefer describing what changed and why it matters.
-- Keep bullets short and parallel in style.
-- Mention file paths or commands only when operationally useful.
-- Do not paste long procedures into the changelog.
-
-### History integrity
-- Only edit the newest version block for current-session work.
-- Do NOT rewrite older version entries unless correcting a clear factual error.
-- Do NOT move unrelated historical content into the current version.
-- Preserve historical ordering and formatting consistency.
-
-### Session discipline
-- Only include changes from the current task/session.
-- If a change was discussed but not actually applied, do NOT include it.
-- If uncertain whether something was truly changed, omit it or mark it UNVERIFIED outside the changelog.
-
-### Classification guidance
-- `Added` = new capability, stack, tool, file, automation
-- `Changed` = behavior/config/workflow/model updates
-- `Fixed` = broken behavior corrected
-- `Removed` = deleted or retired items
-- `Notes` = important caveat, migration note, operational insight
-
-### Relationship to other docs
-- Runbooks belong in `docs/runbooks/`
-- Incidents belong in `docs/incidents/`
-- Stack-specific details belong in `apps/<stack>/README.md`
-- The changelog must remain a concise release history, not a full documentation file
+- latest image tags
+- broad ports exposure for web apps
+- unnecessary privileged mode
+- attaching every service to proxy
 
 ---
 
-## DEBUGGING GUIDELINES
+## Validation requirements
 
-### General approach
+### Compose/config validation
 
-1. Verify container state
-2. Verify network attachment (`proxy`)
-3. Verify Traefik labels
-4. Check logs
-5. Validate connectivity
+- config renders correctly through the stack workflow
+- variable usage is consistent with env contracts
+- networks and labels match intended exposure model
+
+### Routing validation
+
+For routed apps, verify:
+
+- container is running
+- container is attached to proxy if routed
+- Traefik labels are correct
+- route matches intended hostname
+- auth middleware is correct
 
 ---
 
-### Traefik issues
+## Debugging policy
+
+### Traefik 404 / missing route
 
 Check:
 
-* router exists
-* labels correct
-* container on `proxy` network
-* Traefik logs for errors
+- service is running
+- service is on proxy
+- labels are correct
+- Traefik logs show no errors
 
----
+### Authentik issues
 
-### VPN issues (qBittorrentVPN)
+Check:
 
-Critical rule:
+- HTTPS is enforced
+- outpost route exists
+- middleware chain is valid
 
-```bash
+### VPN issues
+
+Check connectivity first:
+
 ping -c1 1.1.1.1
-```
-
-If this fails:
-→ VPN tunnel is broken
-→ regenerate `wg0.conf`
-
-Do NOT debug DNS first.
 
 ---
 
-## OPERATIONAL SAFETY
+## Change policy
 
-* Treat containers with Docker socket access as high-trust
-* Do not modify bind-mounted secrets
-* Do not expose internal services externally
-
----
-
-## WHEN UNCERTAIN
-
-If any of the following occur:
-
-* Missing file content
-* Unclear configuration
-* Ambiguous behavior
-
-→ respond with:
-
-* "UNVERIFIED"
-* request:
-
-  * raw file link
-  * or local output
+- preserve existing naming and layout patterns
+- prefer minimal targeted changes
+- do not introduce new patterns without justification
 
 ---
 
-## PUBLIC MIRROR POLICY
+## When uncertain
 
-When referencing repository content:
-
-1. Use `raw.githubusercontent.com` links
-2. Do NOT rely on memory
-3. Assume branch = `main` unless specified
-4. Quote exact lines when making claims (≤10 lines)
-
-If not verified:
-→ mark as **UNVERIFIED**
-
----
-
-## QUICK OPERATIONS
-
-### Deploy stack
-
-```bash
-stack up <stack>
-```
-
-### View logs
-
-```bash
-stack logs <stack>
-```
-
-### Backup
-
-```bash
-cd ~/stacks/apps/<stack>
-stackbackup
-```
-
----
-
-## MENTAL MODEL
-
-* Traefik = single entrypoint
-* Cloudflare = external routing layer
-* Authentik = authentication layer
-* Docker = execution layer
-* AdGuard = internal DNS
-
----
-
-## DO NOT
-
-* Do not bypass Traefik
-* Do not expose containers directly
-* Do not skip env files
-* Do not modify unrelated stacks
-* Do not assume system state without verification
-
----
-
-## Repository access
-
-The repository is available at:
-https://github.com/Tim-Gradwohl/docker-infra
-
-If additional context is required:
+- mark as UNVERIFIED
 - request specific files
-- do not assume unseen content
+- do not assume behavior
 
 ---
 
-## REFERENCES
+## Quick commands
 
-* System context → `ai-context.md`
-* Architecture → `docs/architecture/`
-* Runbooks → `docs/runbooks/`
-* Stack-specific → `apps/<stack>/README.md`
+stack up <stack>  
+stack down <stack>  
+stack logs <stack>  
+stack ps <stack>  
 
+---
+
+## Mental model
+
+- Traefik = entrypoint  
+- Cloudflare = edge  
+- Authentik = auth  
+- Compose = runtime  
+
+---
+
+## Do not
+
+- bypass Traefik  
+- expose internal services  
+- hardcode secrets  
+- modify unrelated stacks  

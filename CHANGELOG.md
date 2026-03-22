@@ -15,6 +15,31 @@
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
 ---
 
+## 3.9.59 Infrastructure Policy & AI-Agent Enablement
+
+### Added
+- AGENTS.md rewritten as enforceable policy and constraint layer
+- Compose contract defining standard stack structure
+- Routing contract defining Traefik, hostname, and middleware rules
+- Environment contract defining variable scope and secret handling
+- New stack checklist for consistent stack creation
+- Public app publish runbook
+- Traefik debugging runbook
+- Known exceptions registry for intentional policy deviations
+- Initial compose policy validation script
+
+### Changed
+- Standardized repository structure toward policy → contract → runbook → validation model
+- Clarified stack classification: public, LAN-only, internal-only
+- Formalized routing, networking, and security expectations
+
+### Notes
+- Existing stacks may not yet fully comply with new policies
+- Validation script is heuristic (v1) and will be improved
+- service-catalog is excluded from this change and policy scope
+
+---
+
 ## 3.9.58
 
 ### Added
