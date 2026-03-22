@@ -19,9 +19,15 @@
 
 ### Added
 - `apps/authentik/README.md` documenting the checked-in Authentik stack config
+- `apps/gitea/README.md` documenting the checked-in Gitea stack config
+- `apps/landing/README.md` documenting the checked-in landing stack config
+- `docs/reference/agent-onboarding.md` as a start-of-session guide for new agents
 
 ### Changed
 - `docs/README.md` now links only to documentation files that currently exist in the repo
+- `ai-context.md` rewritten as supplemental orientation instead of primary repo truth
+- `AGENTS.md` now links to the agent onboarding guide
+- `docs/reference/known-exceptions.md` populated with verified repo-specific exceptions for adguardhome, syncthing, qbittorrentvpn, authentik, and gateway
 
 ### Removed
 - `apps/breakglass/compose.yml`

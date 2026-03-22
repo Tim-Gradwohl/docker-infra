@@ -49,16 +49,40 @@ Use this format for each entry:
 
 ## Current exceptions
 
-> Add real repo-specific exceptions here as they are verified.
+#### Stack: adguardhome
+- **Exception type:** direct host port exposure for DNS
+- **Files:** `apps/adguardhome/compose.yml`, `apps/adguardhome/README.md`
+- **Reason:** DNS uses `53/tcp` and `53/udp`, which Traefik does not proxy in the repo’s HTTP routing model
+- **Risk:** host-level network exposure outside normal web ingress
+- **Guardrails:** only DNS ports are exposed directly; the admin UI is still Traefik-routed; the README documents the DNS role and LAN restriction intent
 
-### Example template entry
+#### Stack: syncthing
+- **Exception type:** direct host port exposure for sync and discovery protocols
+- **Files:** `apps/syncthing/compose.yml`
+- **Reason:** Syncthing device sync and local discovery require real L4 ports that are not handled by Traefik in this setup
+- **Risk:** host-level exposure beyond normal HTTP ingress
+- **Guardrails:** only the required sync/discovery ports are exposed; the web UI remains Traefik-routed; the Compose file documents the reason and LAN restriction intent
 
-#### Stack: example-stack
-- **Exception type:** direct host port exposure
-- **Files:** `apps/example-stack/compose.yml`
-- **Reason:** service uses a non-HTTP protocol that Traefik does not handle in the intended deployment pattern
-- **Risk:** host-level exposure outside the normal HTTP routing model
-- **Guardrails:** port is limited to the required protocol only; no unrelated ports are exposed; README documents the reason
+#### Stack: qbittorrentvpn
+- **Exception type:** elevated privileges, Docker socket access, and special networking
+- **Files:** `apps/qbittorrentvpn/compose.yml`, `apps/qbittorrentvpn/README.md`, `docs/runbooks/qbittorrentvpn-recovery.md`
+- **Reason:** VPN enforcement relies on `network_mode: service:gluetun`; WireGuard helpers require extra capabilities; port synchronization mounts the Docker socket for runtime updates
+- **Risk:** larger blast radius than a normal app stack due to capability elevation, Docker socket exposure, and shared network namespace behavior
+- **Guardrails:** qBittorrent shares the Gluetun network namespace to prevent bypass; the web UI remains Traefik-routed; recovery workflow and operational model are documented
+
+#### Stack: authentik
+- **Exception type:** public route without shared auth middleware
+- **Files:** `apps/authentik/compose.yml`, `apps/authentik/README.md`
+- **Reason:** Authentik must not protect itself with its own ForwardAuth middleware; the outpost path is routed separately to `authentik-proxy`
+- **Risk:** auth bootstrap and callback flow can break if middleware is applied incorrectly
+- **Guardrails:** the main Authentik route has no shared auth middleware; the outpost path has its own explicit router; the stack README documents this behavior
+
+#### Stack: gateway
+- **Exception type:** intentional published HTTP(S) ports and Docker socket access
+- **Files:** `gateway/compose.yml`, `gateway/README.md`
+- **Reason:** Gateway is the designated ingress component; Traefik must publish entrypoint ports and access the Docker provider
+- **Risk:** this component has the highest exposure in the repo and broad visibility into routed services
+- **Guardrails:** gateway is the only intended public HTTP(S) entrypoint; Docker socket access is read-only; the role and exposure model are documented
 
 ---
 

@@ -31,6 +31,7 @@
 
 ## Reference
 
+* [Agent Onboarding](./reference/agent-onboarding.md)
 * [Known Exceptions](./reference/known-exceptions.md)
 
 ## Context

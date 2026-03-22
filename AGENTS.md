@@ -7,6 +7,7 @@ This file defines the operating policy for AI agents working in this repository.
 It is a **behavior + constraints layer**, not full documentation.
 For architecture and implementation details, use:
 
+- `docs/reference/agent-onboarding.md`
 - `ai-context.md`
 - `docs/`
 - `apps/*/README.md`
@@ -20,7 +21,7 @@ If required context is missing, mark the claim or action as **UNVERIFIED** and r
 
 When working in this repo:
 
-1. Read `AGENTS.md`, then relevant docs under `docs/policies/` and `docs/runbooks/`.
+1. Read `AGENTS.md`, then `docs/reference/agent-onboarding.md`, then relevant docs under `docs/policies/` and `docs/runbooks/`.
 2. For infra changes, classify the stack as public, LAN-only, or internal-only before editing.
 3. Prefer plan-first for multi-file or routing-related changes.
 4. After changes:

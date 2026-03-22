@@ -1,110 +1,123 @@
-# AI CONTEXT — TIMOPOLY DOCKER STACK
+# AI Context
 
-## REPOSITORY
+## Purpose
 
-Primary repository:
-https://github.com/Tim-Gradwohl/docker-infra
+This file is supplemental orientation for AI agents working in this repository.
 
-Use this repository as the source of truth.
-If additional context is required, request specific files.
+It is not the primary source of truth.
 
----
+If this file conflicts with:
 
-## SYSTEM OVERVIEW
+* `AGENTS.md`
+* checked-in Compose files
+* checked-in docs under `docs/`
+* checked-in stack READMEs
 
-Single-host homelab infrastructure running on:
-
-* Windows 11 + Docker Desktop (WSL2 backend)
-* Linux containers only (no Windows containers)
-* Docker Compose (no Kubernetes)
-
-Core model:
-
-Internet
-→ Cloudflare Edge
-→ Cloudflare Tunnel (cloudflared)
-→ Traefik (gateway)
-→ Authentik (ForwardAuth)
-→ Docker services
-
-LAN:
-
-Clients
-→ AdGuard DNS
-→ Traefik
-→ Docker services
+prefer those files and mark any unresolved claim as **UNVERIFIED**.
 
 ---
 
-## CORE ARCHITECTURE
+## Authority Order
 
-### Stack layout
+Use this order when building context:
 
-* `apps/` → compose stacks (source of truth)
-* `gateway/` → Traefik + dynamic config
-* `bin/` → host-level tooling (stack CLI, watchdogs)
-* `state/` → runtime state (watchdogs, logs)
-* `shared/` → env + secrets
-
-### Networking
-
-* `proxy` → shared external network for Traefik routing
-* `internal` → per-stack internal communication
-
-Rules:
-
-* No direct container exposure
-* All HTTP goes through Traefik
-* DNS-controlled routing (host-based)
+1. `AGENTS.md`
+2. relevant files under `docs/policies/`
+3. relevant stack files:
+   * `apps/<stack>/compose.yml`
+   * `apps/<stack>/README.md`
+4. `gateway/README.md`
+5. relevant files under `docs/runbooks/` and `docs/architecture/`
+6. this file
+7. `docs/context/docker_stack_v3.9.57.txt` as historical background only
 
 ---
 
-## INGRESS MODEL
+## Repository Model
 
-### WAN (public)
+This repository manages a single-host Docker Compose homelab.
 
-Cloudflare DNS
-→ Cloudflare Tunnel
-→ Traefik (:443)
-→ service
+Default layout:
 
-* No inbound ports required
-* TLS handled via Traefik (DNS-01)
+* `apps/` -> application stacks
+* `gateway/` -> Traefik and dynamic config
+* `bin/` -> host-level tooling
+* `shared/` -> shared env/secrets inputs
+* `docs/` -> policies, architecture, runbooks, reference
+* `state/` -> runtime state and logs
 
-### LAN (internal)
-
-AdGuard DNS (*.lan domain)
-→ resolves to host IP
-→ Traefik
-→ service
-
-* Split-horizon DNS
-* Same hostnames usable internally
+Git is the source of truth for intended configuration.
 
 ---
 
-## AUTHENTICATION MODEL
+## Default Architecture
 
-* Authentik via Traefik ForwardAuth
-* Middleware chain:
+### Public path
 
-  `authentik-forwardauth → authentik-errors`
+Default model:
 
-Rules:
+Cloudflare -> cloudflared -> Traefik -> middleware -> target service
 
-* Never protect Authentik itself
-* Outpost endpoints must route to `authentik_proxy`
-* HTTPS must be enforced BEFORE auth flow
+### LAN path
 
-Critical fix:
+Default model:
 
-* Cloudflare “Always Use HTTPS” required to avoid callback failures
+LAN client -> local DNS / AdGuard -> Traefik -> target service
+
+### Internal path
+
+Internal-only services should not be directly user-facing unless explicitly documented.
+
+These are defaults, not guarantees for every stack.
+Verify actual routing from checked-in Compose and gateway config.
 
 ---
 
-## TOOLING
+## Routing Defaults
 
-### Primary CLI
+Default repo expectations:
+
+* Traefik is the HTTP(S) entrypoint
+* routed services join the external `proxy` network
+* public services use explicit `Host()` rules
+* public services use `websecure` and TLS
+* LAN-only services should not be silently made public
+
+Primary references:
+
+* `docs/policies/routing-contract.md`
+* `docs/policies/compose-contract.md`
+
+Do not assume every existing stack fully complies.
+Some stacks may still reflect older patterns or intentional exceptions.
+
+---
+
+## Authentication Defaults
+
+Default repo expectation:
+
+* Authentik is enforced through Traefik ForwardAuth for protected public services
+
+Important rules:
+
+* do not apply auth middleware to Authentik itself
+* outpost endpoints must route to `authentik_proxy`
+* HTTPS should be enforced before auth flow for public services
+
+Primary references:
+
+* `docs/policies/routing-contract.md`
+* `docs/architecture/authentik.md`
+* `apps/authentik/compose.yml`
+
+Do not assume a middleware chain exists unless verified in checked-in gateway or stack config.
+
+---
+
+## Tooling
+
+Primary operational interface:
 
 ```bash
 stack <command> <stack>
@@ -116,312 +129,109 @@ Shortcut:
 stk <command>
 ```
 
----
+Useful commands:
 
-### Core Commands
+* `stack list`
+* `stack config <stack>`
+* `stack up <stack>`
+* `stack down <stack>`
+* `stack logs <stack>`
+* `stack ps <stack>`
+* `stack status`
+* `stack doctor <stack>`
+* `stack graph <stack>`
+* `stack backup <stack>`
+* `stack recover <stack>`
 
-* `stack up <stack>` → deploy / update stack
-* `stack down <stack>` → stop stack
-* `stack logs <stack>` → view logs
-* `stack ps <stack>` → container status
+Primary references:
 
----
+* `bin/stack`
+* `docs/tooling/stack-cli.md`
 
-### Diagnostics
+Important:
 
-* `stack status` → quick system overview
-* `stack doctor <stack>` → health + config validation
-* `stack graph <stack>` → service structure
-
-Use these before deep debugging.
-
----
-
-### Lifecycle
-
-* `stack pull <stack|all>` → pull images
-* `stack update <stack|all>` → pull + recreate containers
+* use `stack` / `stk` for normal operations
+* do not assume every stack requires `shared/.env.secrets`; verify against `bin/stack`
 
 ---
 
-### Backup & Recovery
+## Stack Classes
 
-* `stack backup <stack>` → create backup archive
-* `stack recover <stack>` → restore from latest backup
-* `stack backup prune` → clean old backups
+Before changing infra, classify the target as one of:
 
----
+* public app
+* LAN-only app
+* internal-only service
 
-### Helper Commands
+Primary references:
 
-* `stk` → shortcut for `stack`
-* `stackcd <stack>` → jump to stack directory
-* `stackbackup` → legacy backup helper
+* `AGENTS.md`
+* `docs/policies/compose-contract.md`
+* `docs/policies/routing-contract.md`
 
----
-
-### Key Rules
-
-* Always use `stack` instead of raw `docker compose`
-* Always load env files:
-
-  * `shared/.env.global`
-  * `shared/.env.secrets`
-* Use `stack doctor` before manual debugging
-* Use `stack status` for quick checks
-* Backup before risky changes (`stack backup <stack>`)
+Do not infer class from name alone.
+Verify from routing labels, ports, networks, and stack README.
 
 ---
 
-### Execution Model
+## Environment Model
 
-* Stacks are discovered from:
+Default expectation:
 
-  * `~/stacks/apps/*/compose.yml`
-  * `~/stacks/gateway/compose.yml`
-* Some commands support `all`
-* Priority stacks (e.g. gateway, cloudflared) may start first
+* shared non-secret values -> `shared/.env.global`
+* shared secret values -> `shared/.env.secrets`
+* stack-specific values -> `apps/<stack>/.env`
 
----
+Primary reference:
 
-### Full Reference
+* `docs/policies/env-contract.md`
 
-For complete CLI documentation and advanced usage:
-
-```
-docs/tooling/stack-cli.md
-```
-
-If more detail is required, request this file explicitly.
-
+Do not assume an env var exists unless its presence is verified in checked-in files or docs.
 
 ---
 
-## DEPLOYMENT MODEL
+## Exceptions and Drift
 
-Golden rules:
+This repo contains policy docs and validation tooling, but existing stacks may not all be fully normalized.
 
-* Git = source of truth
-* `stack` = only deployment interface
-* Never rely on memory for env variables
+When you encounter unusual patterns:
 
-Flow:
+1. check the stack README
+2. check `docs/reference/known-exceptions.md`
+3. verify the actual Compose file
+4. if still unclear, mark the claim as **UNVERIFIED**
 
-1. Modify compose
-2. Commit + push
-3. `stack up <stack>`
-
----
-
-## QBITTORRENTVPN (CRITICAL SYSTEM)
-
-### Architecture
-
-* gluetun (VPN)
-* qBittorrent (shares gluetun network)
-* PIA port forwarding containers
-* port-sync (updates qBittorrent port)
-
-### Enforcement
-
-```
-network_mode: service:gluetun
-```
-
-→ no VPN = no connectivity
+Do not rewrite a stack to match policy unless the task requires it.
 
 ---
 
-## CRITICAL FAILURE MODE
+## Historical Context
 
-### Dead WireGuard tunnel
+`docs/context/docker_stack_v3.9.57.txt` contains historical design and operational context.
 
-Symptoms:
+Use it for:
 
-* gluetun unhealthy
-* DNS failures / timeouts
-* ping 1.1.1.1 fails
-* WireGuard shows “connected” but no traffic
+* migration intent
+* older operational reasoning
+* failure-mode background
 
-Root cause:
-
-* stale / broken endpoint in `wg0.conf`
+Do not use it as the primary source of truth when it conflicts with current checked-in files.
 
 ---
 
-## RECOVERY MODEL
+## Agent Guidance
 
-### Manual
+When starting a new task:
 
-```
-stk down qbittorrentvpn
-rm wireguard-pia/wg0.conf
-# regenerate config via PIA container
-stk up qbittorrentvpn
-```
+1. read `AGENTS.md`
+2. read the relevant policy files
+3. inspect the target stack’s checked-in `compose.yml`
+4. read the target stack’s `README.md` if present
+5. read gateway or runbook docs only as needed
+6. use this file only as supporting orientation
 
-Validate:
+When uncertain:
 
-```
-docker exec qbittorrentvpn_gluetun ping -c1 1.1.1.1
-```
-
----
-
-### Automated
-
-#### qb-vpn-refresh
-
-* regenerates WireGuard config
-* restarts stack
-
-#### qb-vpn-watchdog
-
-* detects failure via:
-
-  * unhealthy container
-  * log pattern
-  * failed connectivity
-* triggers refresh
-* verifies recovery
-
-Runs via cron.
-
----
-
-## DEBUG PLAYBOOK (FAST PATHS)
-
-### Traefik 404
-
-Check:
-
-* container running
-* attached to `proxy` network
-* labels correct
-* Traefik logs
-
----
-
-### Authentik login fails (400)
-
-Cause:
-
-* HTTP/HTTPS mismatch
-
-Fix:
-
-* enforce HTTPS at Cloudflare edge
-
----
-
-### VPN issues
-
-Check:
-
-```
-ping 1.1.1.1 inside gluetun
-```
-
-If fail:
-→ regenerate `wg0.conf`
-
----
-
-## EXPOSURE MODEL
-
-### Public
-
-* Only Traefik (:80 / :443)
-
-### LAN only
-
-* DNS (AdGuard :53)
-* restricted services via middleware
-
-### Never exposed
-
-* DBs
-* internal service ports
-* container direct access
-
----
-
-## TRUST BOUNDARIES
-
-1. WAN (untrusted)
-2. Cloudflare edge
-3. host (192.168.x.x)
-4. Docker networks
-5. LAN
-
-Only Traefik is reachable from WAN.
-
----
-
-## CONSTRAINTS
-
-* WSL2 environment
-* Docker Compose only
-* No Kubernetes
-* Consumer hardware
-* NAT / no static IP
-
----
-
-## IMPORTANT RULES
-
-* Do not expose containers directly
-* Do not bypass Traefik
-* Do not run docker compose without env files
-* Do not modify unrelated stacks
-* Always validate connectivity at raw IP level (not DNS)
-
----
-
-## MENTAL MODEL
-
-* Traefik = single entrypoint
-* Cloudflare = external routing layer
-* Authentik = access control
-* Docker = execution layer
-* AdGuard = internal DNS authority
-
----
-
-## WHERE TO FIND DETAILS
-
-* Architecture → `docs/architecture/`
-* Runbooks → `docs/runbooks/`
-* Stack-specific → `apps/<stack>/README.md`
-* Incidents → `docs/incidents/`
-
----
-
-## REPOSITORY MAP
-
-### Core files
-- AGENTS.md → rules for agents
-- ai-context.md → system overview
-- CHANGELOG.md → change history
-
-### Architecture
-- docs/architecture/
-  - overview.md
-  - networking.md
-  - ingress-cloudflare-traefik.md
-  - authentik.md
-
-### Runbooks
-- docs/runbooks/
-  - qbittorrentvpn-recovery.md
-  - traefik-debug.md
-  - authentik-debug.md
-
-### Stacks
-- gateway/README.md → Traefik + ingress
-- apps/cloudflared/README.md → Cloudflare Tunnel
-- apps/adguardhome/README.md → DNS
-- apps/qbittorrentvpn/README.md → VPN stack
-- apps/immich/README.md → photo service
-- apps/metube/README.md → yt-dlp UI
-- apps/yt2midi_v3/README.md → GPU pipeline
+* say **UNVERIFIED**
+* request exact files
+* avoid inferring undocumented behavior
