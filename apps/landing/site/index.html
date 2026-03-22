@@ -27,6 +27,7 @@
 
     <footer>
       <div>© <span id="year"></span> timopoly</div>
+      <div id="updated"></div>
       <div id="count"></div>
     </footer>
   </main>
@@ -35,8 +36,25 @@
   const q = document.getElementById('q');
   const grid = document.getElementById('grid');
   const count = document.getElementById('count');
+  const updated = document.getElementById('updated');
 
   let cards = [];
+
+  function formatGeneratedAt(value) {
+    if (!value) return '';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    return `Updated ${date.toLocaleString([], {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    })}`;
+  }
 
   function applyFilter() {
     const term = (q.value || '').trim().toLowerCase();
@@ -55,14 +73,17 @@
     const res = await fetch('/services.json', { cache: 'no-store' });
     const data = await res.json();
 
-    document.title = (data.title ? `${data.title} — Services` : 'timopoly.com');
-    document.getElementById('title').textContent = data.title || 'timopoly.com';
-    document.getElementById('subtitle').textContent = data.subtitle || 'Public services';
+    document.title = 'timopoly.com';
+    document.getElementById('title').textContent = 'timopoly.com';
+    document.getElementById('subtitle').textContent = 'Public services';
+    updated.textContent = formatGeneratedAt(data.generated_at);
 
     grid.innerHTML = '';
     cards = [];
 
     for (const s of (data.services || [])) {
+      if (s.hostname === 'www.timopoly.com') continue;
+
       const host = (s.url || '').replace(/^https?:\/\//, '').replace(/\/+$/, '');
 
       const card = document.createElement('article');
@@ -83,14 +104,14 @@
 
       const desc = document.createElement('p');
       desc.className = 'desc';
-      desc.textContent = s.desc || '';
+      desc.textContent = s.description || s.notes || '';
 
       left.appendChild(name);
       left.appendChild(desc);
 
       const badge = document.createElement('span');
       badge.className = 'badge';
-      badge.textContent = s.tag || 'Service';
+      badge.textContent = s.category || (Array.isArray(s.tags) && s.tags[0]) || 'Service';
 
       top.appendChild(left);
       top.appendChild(badge);
@@ -103,7 +124,7 @@
       a.appendChild(url);
       card.appendChild(a);
 
-      const hay = `${s.name||''} ${s.desc||''} ${s.tag||''} ${host}`.toLowerCase();
+      const hay = `${s.name||''} ${s.description||''} ${s.notes||''} ${s.category||''} ${(s.tags||[]).join(' ')} ${host}`.toLowerCase();
       card.dataset.hay = hay;
 
       grid.appendChild(card);
@@ -123,6 +144,7 @@
 
   load().catch(() => {
     grid.innerHTML = '<article class="card"><div style="padding:18px">Could not load services.json</div></article>';
+    updated.textContent = '';
   });
 </script>
 </body>

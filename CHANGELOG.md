@@ -15,6 +15,21 @@
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
 ---
 
+## 3.9.62 Landing Shared Catalog Integration
+
+### Changed
+- `apps/landing/compose.yml` now mounts `shared/service-catalog/services.json` as the runtime `/services.json` source
+- `apps/landing/site/index.html` now reads the generated service-catalog schema, hides the `www.timopoly.com` self-entry, and shows the catalog `generated_at` timestamp
+- `apps/landing/README.md` now documents the shared catalog mount and generated runtime data flow
+
+### Fixed
+- `bin/generate-service-catalog` now writes `shared/service-catalog/services.json` with readable file permissions so Nginx can serve it from the landing stack
+
+### Notes
+- the checked-in static `apps/landing/site/services.json` file is no longer the active runtime source for landing
+
+---
+
 ## 3.9.61 Service Catalog Automation
 
 ### Added

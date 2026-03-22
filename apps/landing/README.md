@@ -80,17 +80,19 @@ No direct host HTTP port is published in this stack.
 The stack serves a static site from files mounted into the Nginx web root:
 
 * `site/index.html`
-* `site/services.json`
+* `shared/service-catalog/services.json`
 * `site/timopoly-ui.css`
 
 Current checked-in behavior:
 
 * `index.html` fetches `/services.json`
-* the page title and subtitle are populated from that JSON
+* the page reads the generated shared service catalog schema
 * service cards are rendered client-side in the browser
 * search/filter behavior is implemented in the page script
+* the landing page hides the `www.timopoly.com` self-entry from the generated catalog
+* the footer shows the catalog `generated_at` timestamp when present
 
-The checked-in `services.json` is a static list of public services.
+The active runtime `services.json` is the generated shared service catalog artifact.
 
 ---
 
@@ -99,7 +101,7 @@ The checked-in `services.json` is a static list of public services.
 Read-only bind mounts:
 
 * `/home/tim/stacks/apps/landing/site/index.html` -> `/usr/share/nginx/html/index.html`
-* `/home/tim/stacks/apps/landing/site/services.json` -> `/usr/share/nginx/html/services.json`
+* `/home/tim/stacks/shared/service-catalog/services.json` -> `/usr/share/nginx/html/services.json`
 * `/home/tim/stacks/apps/landing/site/timopoly-ui.css` -> `/usr/share/nginx/html/timopoly-ui.css`
 
 No named volumes are defined in the checked-in Compose file.
@@ -142,11 +144,9 @@ The repo contains service-catalog tooling and architecture documentation:
 
 Current checked-in landing stack status:
 
-* this stack mounts `apps/landing/site/services.json`
-* it does not mount `shared/service-catalog`
-* it does not read a generated shared catalog artifact
-
-So service-catalog integration is documented in the repo, but not wired into this stack as checked in.
+* this stack mounts `shared/service-catalog/services.json`
+* it reads the generated shared catalog artifact at `/services.json`
+* the checked-in static `apps/landing/site/services.json` file is no longer the active runtime source
 
 ---
 
@@ -213,5 +213,4 @@ The following are not documented here because they are not proven by the checked
 
 * the exact Cloudflare DNS and tunnel ingress configuration for `www.timopoly.com`
 * whether the landing page is intended to be publicly accessible without additional Cloudflare-side access controls
-* any automation that updates `site/services.json`
-* whether the current service list is manually curated or generated outside the repo
+* whether the current service list should intentionally include `www.timopoly.com` as a visible card
