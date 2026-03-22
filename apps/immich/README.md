@@ -140,6 +140,8 @@ Check:
 
 * postgres container healthy
 * env variables correctly injected
+* persisted database roles match the configured `DB_USERNAME`
+* `stack recover immich` only restores the stack directory; it does not repair auth drift inside the existing Postgres volume
 
 ---
 
@@ -161,4 +163,3 @@ Check:
 * Auth → `docs/architecture/authentik.md`
 * Deployment → `docs/runbooks/deployments.md`
 * System context → `ai-context.md`
-
