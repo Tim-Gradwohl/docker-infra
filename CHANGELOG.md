@@ -15,6 +15,22 @@
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
 ---
 
+## 3.9.61 Service Catalog Automation
+
+### Added
+- automatic hostname-level change logging for `bin/generate-service-catalog` in `state/logs/service-catalog-changes.log`
+
+### Changed
+- `bin/generate-service-catalog` now loads missing Cloudflare credentials from `shared/.env.secrets` by default
+- `bin/generate-service-catalog` now skips rewriting `shared/service-catalog/services.json` when the generated catalog content is unchanged
+- documented the service-catalog cron workflow, env-file lookup, and change-log behavior in `docs/architecture/service-catalog.md`
+
+### Notes
+- a user crontab entry now runs `bin/generate-service-catalog` every 10 minutes to refresh `shared/service-catalog/services.json`
+- service-catalog generation remains separate from the landing stack; landing is not wired to consume the shared artifact by this change
+
+---
+
 ## 3.9.60 Docs Cleanup, Authentik README, and Breakglass Removal
 
 ### Added

@@ -20,10 +20,43 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Tuple
 
 API_BASE = "https://api.cloudflare.com/client/v4"
+SCRIPT_DIR = pathlib.Path(__file__).resolve().parent
+ROOT_DIR = SCRIPT_DIR.parent
+DEFAULT_SECRETS_FILE = ROOT_DIR / "shared" / ".env.secrets"
 DEFAULT_OUTPUT = pathlib.Path("~/stacks/shared/service-catalog/services.json").expanduser()
 DEFAULT_META = pathlib.Path("~/stacks/apps/landing/services.meta.json").expanduser()
+DEFAULT_CHANGE_LOG = ROOT_DIR / "state" / "logs" / "service-catalog-changes.log"
 DEFAULT_TIMEOUT = 20
 USER_AGENT = "generate-service-catalog/1.0"
+
+
+def load_env_file(path: pathlib.Path) -> None:
+    if not path.exists():
+        return
+
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            for lineno, raw_line in enumerate(handle, start=1):
+                line = raw_line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.startswith("export "):
+                    line = line[7:].strip()
+                if "=" not in line:
+                    raise SystemExit(f"Invalid env assignment in {path}:{lineno}")
+
+                name, value = line.split("=", 1)
+                name = name.strip()
+                value = value.strip()
+                if not name:
+                    raise SystemExit(f"Invalid env variable name in {path}:{lineno}")
+
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+                    value = value[1:-1]
+
+                os.environ.setdefault(name, value)
+    except OSError as exc:
+        raise SystemExit(f"Failed to read env file {path}: {exc}") from exc
 
 
 def env_required(name: str) -> str:
@@ -113,6 +146,48 @@ def write_json_atomic(output_path: pathlib.Path, payload: Dict[str, Any]) -> Non
     os.replace(temp_name, output_path)
 
 
+def append_change_log(path: pathlib.Path, message: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(f"{datetime.now(timezone.utc).isoformat()} {message}\n")
+
+
+def load_json_if_exists(path: pathlib.Path) -> Dict[str, Any] | None:
+    if not path.exists():
+        return None
+
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    return data if isinstance(data, dict) else None
+
+
+def payload_without_generated_at(payload: Dict[str, Any]) -> Dict[str, Any]:
+    normalized = dict(payload)
+    normalized.pop("generated_at", None)
+    return normalized
+
+
+def service_hostnames(payload: Dict[str, Any] | None) -> set[str]:
+    if not payload:
+        return set()
+
+    services = payload.get("services", [])
+    if not isinstance(services, list):
+        return set()
+
+    hostnames: set[str] = set()
+    for item in services:
+        if isinstance(item, dict):
+            hostname = item.get("hostname")
+            if isinstance(hostname, str) and hostname:
+                hostnames.add(hostname)
+    return hostnames
+
+
 def extract_services(
     tunnels: List[Dict[str, Any]],
     account_id: str,
@@ -184,10 +259,12 @@ def extract_services(
 
 
 def main() -> int:
+    load_env_file(env_path("CF_SERVICE_CATALOG_ENV_FILE", DEFAULT_SECRETS_FILE))
     token = env_required("CLOUDFLARE_API_TOKEN")
     account_id = env_required("CLOUDFLARE_ACCOUNT_ID")
     output_path = env_path("CF_SERVICE_CATALOG_OUTPUT", DEFAULT_OUTPUT)
     meta_path = env_path("CF_SERVICE_CATALOG_META", DEFAULT_META)
+    change_log_path = env_path("CF_SERVICE_CATALOG_CHANGE_LOG", DEFAULT_CHANGE_LOG)
     timeout = env_int("CF_SERVICE_CATALOG_TIMEOUT", DEFAULT_TIMEOUT)
 
     metadata = load_metadata(meta_path)
@@ -208,7 +285,24 @@ def main() -> int:
         "errors": errors,
     }
 
+    existing_payload = load_json_if_exists(output_path)
+    if existing_payload and payload_without_generated_at(existing_payload) == payload_without_generated_at(payload):
+        print(f"No changes detected for {output_path}")
+        return 0
+
+    added = sorted(service_hostnames(payload) - service_hostnames(existing_payload))
+    removed = sorted(service_hostnames(existing_payload) - service_hostnames(payload))
+
     write_json_atomic(output_path, payload)
+    if added or removed:
+        change_parts: List[str] = []
+        if added:
+            change_parts.append(f"added={','.join(added)}")
+        if removed:
+            change_parts.append(f"removed={','.join(removed)}")
+        change_message = f"Updated {output_path} {' '.join(change_parts)}"
+        append_change_log(change_log_path, change_message)
+        print(change_message)
     print(f"Wrote {len(services)} services from {len(tunnels)} tunnels to {output_path}")
     return 0
 

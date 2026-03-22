@@ -48,11 +48,25 @@ Override with:
 
 ## Required environment
 
+By default, the script loads missing variables from:
+
+- `shared/.env.secrets`
+
+Override that env file path with:
+
+- `CF_SERVICE_CATALOG_ENV_FILE`
+
+Explicit process environment variables still win over values loaded from the env file.
+
+Required variables:
+
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
 
 Optional:
 
+- `CF_SERVICE_CATALOG_ENV_FILE` -> path to an env file used to populate missing variables
+- `CF_SERVICE_CATALOG_CHANGE_LOG` -> path to an append-only change log for added/removed hostnames
 - `CF_SERVICE_CATALOG_META` -> path to metadata JSON keyed by hostname
 - `CF_SERVICE_CATALOG_OUTPUT` -> output path for generated catalog
 - `CF_SERVICE_CATALOG_TIMEOUT` -> request timeout in seconds
@@ -85,16 +99,16 @@ Use a separate metadata file to curate labels, icons, grouping, and sort order w
 Run every 10 minutes as the same operator account that already manages the repo checkout:
 
 ```cron
-*/10 * * * * cd /home/tim/stacks && /usr/bin/env \
-  CLOUDFLARE_API_TOKEN=... \
-  CLOUDFLARE_ACCOUNT_ID=... \
+*/10 * * * * mkdir -p /home/tim/stacks/state/logs && cd /home/tim/stacks && /usr/bin/env \
   CF_SERVICE_CATALOG_META=/home/tim/stacks/apps/landing/services.meta.json \
   CF_SERVICE_CATALOG_OUTPUT=/home/tim/stacks/shared/service-catalog/services.json \
   /usr/bin/python3 /home/tim/stacks/bin/generate-service-catalog \
   >> /home/tim/stacks/state/logs/service-catalog.log 2>&1
 ```
 
-For a real deployment, prefer sourcing secrets from your existing environment or a root-readable env file instead of embedding them directly into crontab.
+This relies on the script's default `shared/.env.secrets` lookup. If secrets live elsewhere, set `CF_SERVICE_CATALOG_ENV_FILE` in the cron environment.
+The script skips rewriting the JSON file when the catalog content is unchanged.
+When the catalog changes, it appends a hostname-level summary to `state/logs/service-catalog-changes.log` by default.
 
 ## Consumer mount example
 
