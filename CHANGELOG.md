@@ -13,6 +13,20 @@
 - Do not rewrite historical entries unless fixing a factual error.
 - Do not include full procedures, incident reports, or trivial formatting changes.
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
+## 3.9.68 Paperless-AI RAG Startup Fix
+
+### Changed
+- `apps/paperless/compose.yml` now starts `paperless-ai` through a stack-local patch script and mounts that script read-only into the container
+- `apps/paperless/README.md` now documents the stack-local Paperless-AI RAG startup fixes
+- `apps/paperless/bin/start-paperless-ai-with-rag-fixes.sh` patches the upstream Paperless-AI RAG startup path at container start
+- `apps/paperless/bin/start-paperless-ai-with-rag-fixes.sh` now reuses a healthy persisted `data/paperless-ai/system_state.json` on restart instead of always forcing Python RAG `--initialize`
+- `apps/paperless/bin/start-paperless-ai-with-rag-fixes.sh` now patches the upstream RAG page so `ai_model: null` is treated as idle instead of crashing the status check, and so the page does not block first-send on stale offline state
+
+### Fixed
+- avoids recreates getting stuck with `connect ECONNREFUSED 127.0.0.1:8000` when the upstream Python RAG startup path would otherwise block before opening the port
+- fixes the frontend-only failure where unloaded Ollama state kept `/rag` stuck offline in the browser and prevented the first request from autoloading `llama3.2:3b`
+
+---
 ## 3.9.67 Paperless GPT OCR Session Prewarm
 
 ### Changed

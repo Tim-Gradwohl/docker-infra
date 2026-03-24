@@ -69,6 +69,16 @@ Paperless-AI setup values:
 
 Do not use `localhost` for Ollama inside Paperless-AI. The app runs in its own container, so `localhost` points back to itself and will fail.
 
+Paperless-AI note:
+
+* fresh boots now default `PROCESS_PREDEFINED_DOCUMENTS=no` so the app does not run empty scheduled scans before you define tags
+* once Paperless-AI has bootstrapped, it persists its own settings in `./data/paperless-ai/.env` and loads that file on restart
+* this stack patches the upstream Paperless-AI RAG startup path at container start so the `/rag` experience works correctly with the stack's normal Authentik-protected route
+* when `./data/paperless-ai/system_state.json` already shows a healthy index, this stack reuses that persisted RAG state on container restart instead of forcing a fresh blocking `--initialize` path
+* the startup patch also fixes the upstream RAG page so an unloaded Ollama model does not throw the page into a fake offline state or block a first chat request from triggering autoload
+* for an already-bootstrapped stack that still has `PROCESS_PREDEFINED_DOCUMENTS=yes` with empty `TAGS`, run [`apps/paperless/bin/disable-paperless-ai-predefined-scan.sh`](/home/tim/stacks/apps/paperless/bin/disable-paperless-ai-predefined-scan.sh)
+* only turn predefined scans back on after you have actually configured the target tags in Paperless-AI
+
 ---
 
 ## Storage
@@ -119,6 +129,12 @@ Prewarm the Paperless-GPT vision model for an OCR session:
 apps/paperless/bin/prewarm-vision-model.sh
 ```
 
+Disable Paperless-AI predefined scans for an already-bootstrapped stack:
+
+```bash
+apps/paperless/bin/disable-paperless-ai-predefined-scan.sh
+```
+
 ---
 
 ## Notes
@@ -130,6 +146,7 @@ apps/paperless/bin/prewarm-vision-model.sh
 * `paperless-gpt` now waits idle until `PAPERLESS_API_TOKEN` is added, instead of crash-looping during first boot.
 * PostgreSQL is pinned to `postgres:17` because the current bind mount layout uses the legacy `/var/lib/postgresql/data` layout.
 * Ollama GPU detection was verified in-container against an NVIDIA GeForce GTX 1060 6GB.
+* Paperless-AI was observed loading its persisted config from `./data/paperless-ai/.env` on `2026-03-23`, so existing installs need a one-time runtime config correction if they were bootstrapped with predefined scans enabled.
 * `paperless-gpt` text generation is configured for `llama3.2:3b`; OCR vision uses `minicpm-v:8b`.
 * Ollama is configured with `OLLAMA_KEEP_ALIVE=5m` for this stack.
 * On this host, a cold `minicpm-v:8b` load took about 95-102 seconds and could saturate Docker/WSL disk reads while loading.

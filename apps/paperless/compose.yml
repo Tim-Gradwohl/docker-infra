@@ -126,14 +126,20 @@ services:
     depends_on:
       - paperless
       - ollama
+    command:
+      - /bin/sh
+      - -lc
+      - cd /app && /patches/start-paperless-ai-with-rag-fixes.sh
     environment:
       TZ: ${TZ:-Europe/Berlin}
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
       PAPERLESS_API_URL: http://paperless:8000/api
       PAPERLESS_API_TOKEN: ${PAPERLESS_API_TOKEN:-}
+      PROCESS_PREDEFINED_DOCUMENTS: ${PAPERLESS_AI_PROCESS_PREDEFINED_DOCUMENTS:-no}
     volumes:
       - ./data/paperless-ai:/app/data
+      - ./bin/start-paperless-ai-with-rag-fixes.sh:/patches/start-paperless-ai-with-rag-fixes.sh:ro
     networks:
       - internal
       - proxy
