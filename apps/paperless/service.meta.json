@@ -1,0 +1,46 @@
+{
+  "paperless.timopoly.com": {
+    "name": "Paperless",
+    "description": "Document archive and OCR",
+    "category": "Productivity",
+    "icon": "file-text",
+    "order": 60,
+    "tags": [
+      "documents",
+      "ocr"
+    ]
+  },
+  "paperless-llm.timopoly.com": {
+    "name": "Paperless LLM",
+    "description": "Local model chat and testing",
+    "category": "AI",
+    "icon": "brain",
+    "order": 61,
+    "tags": [
+      "llm",
+      "ollama"
+    ]
+  },
+  "paperless-ai.timopoly.com": {
+    "name": "Paperless AI",
+    "description": "AI metadata and semantic search",
+    "category": "AI",
+    "icon": "sparkles",
+    "order": 62,
+    "tags": [
+      "rag",
+      "metadata"
+    ]
+  },
+  "paperless-gpt.timopoly.com": {
+    "name": "Paperless GPT",
+    "description": "LLM-enhanced OCR and document analysis",
+    "category": "AI",
+    "icon": "scan-search",
+    "order": 63,
+    "tags": [
+      "ocr",
+      "llm"
+    ]
+  }
+}

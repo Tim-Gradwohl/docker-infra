@@ -13,6 +13,44 @@
 - Do not rewrite historical entries unless fixing a factual error.
 - Do not include full procedures, incident reports, or trivial formatting changes.
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
+## 3.9.67 Paperless GPT OCR Session Prewarm
+
+### Changed
+- `apps/paperless/compose.yml` now sets `OLLAMA_KEEP_ALIVE=5m` on the Ollama service instead of running an always-on vision-model keepwarm sidecar
+- `apps/paperless/.env` now uses `PAPERLESS_OLLAMA_KEEP_ALIVE=5m` and drops the always-on warm-interval setting
+- `apps/paperless/README.md` now documents the session-prewarm workflow and the observed cold-load versus warm-load timings on this host
+- `apps/paperless/service.meta.json` describes `paperless-gpt` as OCR plus analysis again
+- `apps/paperless/bin/prewarm-vision-model.sh` adds a stack-local warmup command for OCR sessions
+
+### Fixed
+- keeps `paperless-gpt` OCR operational on this host without reserving VRAM all day, while still avoiding first-request cold loads during planned OCR sessions
+
+### Notes
+- `paperless-gpt` remains OCR-capable; operators can prewarm the vision model on demand before OCR sessions
+
+---
+
+## 3.9.66 Web UI Style Reuse Guidance
+
+### Changed
+- `docs/checklists/new-stack.md` now tells new browser-facing stacks to reuse the landing stylesheet pattern by default
+- `docs/policies/compose-contract.md` now documents the landing stylesheet reuse convention for custom web UIs
+
+### Notes
+- new stack guidance now treats `apps/landing/site/timopoly-ui.css` as the default visual baseline for repo-managed web UIs
+
+---
+
+## 3.9.65 Landing Live Catalog Refresh
+
+### Changed
+- `apps/landing/compose.yml` now mounts the shared `service-catalog` directory instead of binding only `services.json`
+- `apps/landing/site/index.html` now reads `/service-catalog/services.json` so landing sees atomic catalog rewrites without a container restart
+- `apps/landing/README.md` now documents the directory-backed catalog path and no-restart refresh behavior
+
+### Notes
+- landing no longer requires a manual recreate just to pick up generated service-catalog updates
+
 ---
 
 ## 3.9.64 Service Metadata Validation Coverage
