@@ -13,6 +13,46 @@
 - Do not rewrite historical entries unless fixing a factual error.
 - Do not include full procedures, incident reports, or trivial formatting changes.
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
+## 3.9.72 Remove Paperless Stack
+
+### Changed
+- `bin/stack` no longer treats `paperless` as a managed secret-backed stack
+
+### Removed
+- `apps/paperless/` and its checked-in stack definition from the repo
+- the local `apps/paperless/` runtime contents from disk
+
+## 3.9.71 Paperless GPT Auto OCR Resume State
+
+### Changed
+- `apps/paperless/compose.yml` now provisions a persistent state volume for the stack-local `paperless-gpt-auto-ocr` worker so it can resume an in-flight OCR job after a worker restart
+- `apps/paperless/README.md` now documents the persisted worker state volume for restart resume behavior
+
+### Fixed
+- `apps/paperless/bin/paperless-gpt-auto-ocr-worker.py` now resumes its last submitted OCR job after a worker restart instead of forgetting which tagged document should receive the completed OCR text
+
+## 3.9.70 Paperless GPT Auto OCR Worker
+
+### Added
+- `apps/paperless/bin/paperless-gpt-auto-ocr-worker.py` adds a stack-local auto OCR worker that watches the Paperless `paperless-gpt-ocr-auto` tag, submits OCR through the observable Paperless-GPT job API, and writes OCR text back to Paperless
+
+### Changed
+- `apps/paperless/compose.yml` now runs an internal-only `paperless-gpt-auto-ocr` worker service for auto OCR
+- `apps/paperless/.env` now keeps the upstream inline auto OCR worker disabled while configuring the stack-local worker to watch `paperless-gpt-ocr-auto`
+- `apps/paperless/README.md` now documents that auto OCR is handled by the stack-local worker and that it clears the auto tag after completion
+
+### Fixed
+- restores auto OCR as a usable primary workflow on this host by routing it through the same observable job API path used by manual OCR instead of the upstream inline worker path
+
+## 3.9.69 Paperless GPT Auto OCR Default Gate
+
+### Changed
+- `apps/paperless/.env` now disables the checked-in `paperless-gpt` auto OCR tag by default so new deploys do not route documents into the current invisible inline Ollama OCR worker path
+- `apps/paperless/README.md` now documents that manual OCR remains supported and that auto OCR must be explicitly re-enabled
+
+### Notes
+- operators who want auto OCR back must restore `PAPERLESS_GPT_AUTO_OCR_TAG=paperless-gpt-ocr-auto` and align the Paperless workflow tag with that value
+
 ## 3.9.68 Paperless-AI RAG Startup Fix
 
 ### Changed
