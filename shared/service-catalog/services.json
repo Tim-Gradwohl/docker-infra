@@ -1,0 +1,156 @@
+{
+  "generated_at": "2026-03-22T18:26:45.393298+00:00",
+  "source": "cloudflare_tunnel_remote_config",
+  "account_id": "ab08b00aa670c7cb8c3ca64c38d16644",
+  "service_count": 7,
+  "tunnel_count": 1,
+  "services": [
+    {
+      "id": "www-timopoly-com",
+      "name": "Timopoly",
+      "hostname": "www.timopoly.com",
+      "url": "https://www.timopoly.com",
+      "service": "https://gateway_traefik:443",
+      "tunnel_id": "6b60343a-07bf-47bd-9b4c-7d91fc089387",
+      "tunnel_name": "homelab",
+      "tunnel_status": "healthy",
+      "source": "cloudflare",
+      "published": true,
+      "description": "Public service index",
+      "icon": "home",
+      "category": "Portal",
+      "order": 0,
+      "tags": [
+        "landing"
+      ],
+      "notes": null
+    },
+    {
+      "id": "auth-timopoly-com",
+      "name": "Authentik",
+      "hostname": "auth.timopoly.com",
+      "url": "https://auth.timopoly.com",
+      "service": "https://gateway_traefik:443",
+      "tunnel_id": "6b60343a-07bf-47bd-9b4c-7d91fc089387",
+      "tunnel_name": "homelab",
+      "tunnel_status": "healthy",
+      "source": "cloudflare",
+      "published": true,
+      "description": "Authentication and single sign-on",
+      "icon": "shield",
+      "category": "Identity",
+      "order": 10,
+      "tags": [
+        "auth",
+        "sso"
+      ],
+      "notes": null
+    },
+    {
+      "id": "photos-timopoly-com",
+      "name": "Immich",
+      "hostname": "photos.timopoly.com",
+      "url": "https://photos.timopoly.com",
+      "service": "https://gateway_traefik:443",
+      "tunnel_id": "6b60343a-07bf-47bd-9b4c-7d91fc089387",
+      "tunnel_name": "homelab",
+      "tunnel_status": "healthy",
+      "source": "cloudflare",
+      "published": true,
+      "description": "Photos and videos",
+      "icon": "camera",
+      "category": "Media",
+      "order": 20,
+      "tags": [
+        "photos",
+        "gallery"
+      ],
+      "notes": null
+    },
+    {
+      "id": "tv-timopoly-com",
+      "name": "Nodecast TV",
+      "hostname": "tv.timopoly.com",
+      "url": "https://tv.timopoly.com",
+      "service": "https://gateway_traefik:443",
+      "tunnel_id": "6b60343a-07bf-47bd-9b4c-7d91fc089387",
+      "tunnel_name": "homelab",
+      "tunnel_status": "healthy",
+      "source": "cloudflare",
+      "published": true,
+      "description": "IPTV web player",
+      "icon": "tv",
+      "category": "Entertainment",
+      "order": 30,
+      "tags": [
+        "iptv",
+        "streaming"
+      ],
+      "notes": null
+    },
+    {
+      "id": "metube-timopoly-com",
+      "name": "MeTube",
+      "hostname": "metube.timopoly.com",
+      "url": "https://metube.timopoly.com",
+      "service": "https://gateway_traefik:443",
+      "tunnel_id": "6b60343a-07bf-47bd-9b4c-7d91fc089387",
+      "tunnel_name": "homelab",
+      "tunnel_status": "healthy",
+      "source": "cloudflare",
+      "published": true,
+      "description": "Video and audio downloads",
+      "icon": "download",
+      "category": "Media",
+      "order": 40,
+      "tags": [
+        "youtube",
+        "downloads"
+      ],
+      "notes": null
+    },
+    {
+      "id": "yt2midi-v3-timopoly-com",
+      "name": "YT2MIDI",
+      "hostname": "yt2midi-v3.timopoly.com",
+      "url": "https://yt2midi-v3.timopoly.com",
+      "service": "https://gateway_traefik:443",
+      "tunnel_id": "6b60343a-07bf-47bd-9b4c-7d91fc089387",
+      "tunnel_name": "homelab",
+      "tunnel_status": "healthy",
+      "source": "cloudflare",
+      "published": true,
+      "description": "Convert YouTube audio into MIDI",
+      "icon": "music",
+      "category": "Audio",
+      "order": 50,
+      "tags": [
+        "midi",
+        "conversion"
+      ],
+      "notes": null
+    },
+    {
+      "id": "iptv-timopoly-com",
+      "name": "IPTVnator",
+      "hostname": "iptv.timopoly.com",
+      "url": "https://iptv.timopoly.com",
+      "service": "https://gateway_traefik:443",
+      "tunnel_id": "6b60343a-07bf-47bd-9b4c-7d91fc089387",
+      "tunnel_name": "homelab",
+      "tunnel_status": "healthy",
+      "source": "cloudflare",
+      "published": true,
+      "description": "IPTV desktop-style web player",
+      "icon": "tv",
+      "category": "Entertainment",
+      "order": 80,
+      "tags": [
+        "iptv",
+        "player"
+      ],
+      "notes": null
+    }
+  ],
+  "errors": []
+}

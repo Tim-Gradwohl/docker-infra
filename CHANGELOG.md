@@ -13,6 +13,17 @@
 - Do not rewrite historical entries unless fixing a factual error.
 - Do not include full procedures, incident reports, or trivial formatting changes.
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
+## 3.9.73 Restore Paperless Stack
+
+### Added
+- `apps/paperless/` restores the repo-native Paperless-ngx stack with Ollama, Open WebUI, Paperless-AI, and Paperless-GPT integration adapted from `timothystewart6/paperless-stack`
+
+### Changed
+- `bin/stack` now treats `paperless` as a managed secret-backed stack again
+
+### Notes
+- the restored stack keeps the repo's Traefik-first deployment model and shared-secret wiring instead of the upstream raw port-published compose
+
 ## 3.9.72 Remove Paperless Stack
 
 ### Changed

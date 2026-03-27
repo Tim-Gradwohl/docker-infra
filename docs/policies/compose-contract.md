@@ -260,6 +260,24 @@ Purpose:
 - define human-facing presentation metadata for landing and other catalog consumers
 - keep service discovery in Cloudflare and presentation data in Git
 
+---
+
+## Web UI styling convention
+
+If a stack includes a custom browser-facing web UI, prefer reusing the landing stylesheet pattern so landing and app stacks keep a consistent visual baseline.
+
+Preferred approach:
+
+- start from `apps/landing/site/timopoly-ui.css`
+- include the shared stylesheet before app-specific CSS
+- layer only the minimum stack-specific overrides needed on top
+
+Reference:
+
+- `apps/landing/README_UI_REUSE.txt`
+
+If a stack intentionally uses a different design system, document the reason in that stack's README.
+
 Rules:
 
 - required for public stacks

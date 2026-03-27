@@ -10,7 +10,7 @@ ENV_GLOBAL="${ROOT}/shared/.env.global"
 ENV_SECRETS="${ROOT}/shared/.env.secrets"
 
 # Which stacks require secrets at deploy-time
-REQUIRES_SECRETS_REGEX='^(cloudflared|authentik|gateway|immich|qbittorrentvpn|generate_piawg)$'
+REQUIRES_SECRETS_REGEX='^(cloudflared|authentik|gateway|immich|paperless|qbittorrentvpn|generate_piawg)$'
 
 declare -A STACKS
 

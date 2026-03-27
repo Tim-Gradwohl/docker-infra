@@ -251,7 +251,27 @@ The README should explain the stack without forcing the reader to reverse-engine
 
 ---
 
-## 12a. Add service catalog metadata for public stacks
+## 12a. Reuse the landing UI stylesheet for new web UIs
+
+If the stack ships a browser-facing web UI, reuse the landing stylesheet pattern so landing and app stacks keep a consistent visual baseline.
+
+Preferred approach:
+
+- start from `apps/landing/site/timopoly-ui.css`
+- mount or copy the stylesheet into the app web root
+- include it from the app HTML before adding app-specific CSS overrides
+
+Reference:
+
+- `apps/landing/README_UI_REUSE.txt`
+
+Exceptions:
+
+- document the reason in the stack README if the app must use a different design system or vendor-owned UI
+
+---
+
+## 12b. Add service catalog metadata for public stacks
 
 If the stack is a public app, create:
 

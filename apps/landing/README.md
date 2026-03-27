@@ -80,17 +80,18 @@ No direct host HTTP port is published in this stack.
 The stack serves a static site from files mounted into the Nginx web root:
 
 * `site/index.html`
-* `shared/service-catalog/services.json`
+* `shared/service-catalog/`
 * `site/timopoly-ui.css`
 
 Current checked-in behavior:
 
-* `index.html` fetches `/services.json`
+* `index.html` fetches `/service-catalog/services.json`
 * the page reads the generated shared service catalog schema
 * service cards are rendered client-side in the browser
 * search/filter behavior is implemented in the page script
 * the landing page hides the `www.timopoly.com` self-entry from the generated catalog
 * the footer shows the catalog `generated_at` timestamp when present
+* the shared catalog directory mount allows atomic `services.json` rewrites to appear without recreating the `landing` container
 
 The active runtime `services.json` is the generated shared service catalog artifact.
 
@@ -101,7 +102,7 @@ The active runtime `services.json` is the generated shared service catalog artif
 Read-only bind mounts:
 
 * `/home/tim/stacks/apps/landing/site/index.html` -> `/usr/share/nginx/html/index.html`
-* `/home/tim/stacks/shared/service-catalog/services.json` -> `/usr/share/nginx/html/services.json`
+* `/home/tim/stacks/shared/service-catalog` -> `/usr/share/nginx/html/service-catalog`
 * `/home/tim/stacks/apps/landing/site/timopoly-ui.css` -> `/usr/share/nginx/html/timopoly-ui.css`
 
 No named volumes are defined in the checked-in Compose file.
@@ -144,8 +145,8 @@ The repo contains service-catalog tooling and architecture documentation:
 
 Current checked-in landing stack status:
 
-* this stack mounts `shared/service-catalog/services.json`
-* it reads the generated shared catalog artifact at `/services.json`
+* this stack mounts `shared/service-catalog/`
+* it reads the generated shared catalog artifact at `/service-catalog/services.json`
 * the checked-in static `apps/landing/site/services.json` file is no longer the active runtime source
 
 ---
