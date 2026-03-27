@@ -1,0 +1,212 @@
+name: ${APP_ID}
+
+services:
+  paperless:
+    image: paperlessngx/paperless-ngx:2.20.10
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+      - gotenberg
+      - tika
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      USERMAP_UID: ${PUID:-1000}
+      USERMAP_GID: ${PGID:-1000}
+      PAPERLESS_URL: https://${APP_HOST}.${BASE_DOMAIN}
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY:?set in shared/.env.secrets}
+      PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER:?set in shared/.env.secrets}
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD:?set in shared/.env.secrets}
+      PAPERLESS_ADMIN_MAIL: ${PAPERLESS_ADMIN_MAIL:-paperless@${BASE_DOMAIN}}
+      PAPERLESS_DBENGINE: postgresql
+      PAPERLESS_DBHOST: postgres
+      PAPERLESS_DBPORT: 5432
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_DBPASS: ${PAPERLESS_DB_PASSWORD:?set in shared/.env.secrets}
+      PAPERLESS_REDIS: redis://redis:6379
+      PAPERLESS_TIKA_ENABLED: "1"
+      PAPERLESS_TIKA_ENDPOINT: http://tika:9998
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://gotenberg:3000
+      PAPERLESS_OCR_LANGUAGE: ${PAPERLESS_OCR_LANGUAGE}
+      PAPERLESS_CONSUMER_RECURSIVE: ${PAPERLESS_CONSUMER_RECURSIVE:-false}
+    volumes:
+      - ./data/paperless/data:/usr/src/paperless/data
+      - ./data/paperless/media:/usr/src/paperless/media
+      - ./data/paperless/export:/usr/src/paperless/export
+      - ./data/paperless/consume:/usr/src/paperless/consume
+    networks:
+      - internal
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.${APP_ID}.rule=Host(`${APP_HOST}.${BASE_DOMAIN}`)
+      - traefik.http.routers.${APP_ID}.entrypoints=websecure
+      - traefik.http.routers.${APP_ID}.tls=true
+      - traefik.http.routers.${APP_ID}.tls.certresolver=${TRAEFIK_CERTRESOLVER:-cloudflare}
+      - traefik.http.routers.${APP_ID}.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+      - traefik.http.services.${APP_ID}.loadbalancer.server.port=8000
+
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: ${PAPERLESS_DB_PASSWORD:?set in shared/.env.secrets}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - internal
+
+  redis:
+    image: redis:8
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - internal
+
+  gotenberg:
+    image: gotenberg/gotenberg:8.25
+    restart: unless-stopped
+    command:
+      - gotenberg
+      - --chromium-disable-javascript=true
+      - --chromium-allow-list=file:///tmp/.*
+    networks:
+      - internal
+
+  tika:
+    image: apache/tika:3.2.3.0-full
+    restart: unless-stopped
+    networks:
+      - internal
+
+  ollama:
+    image: ollama/ollama:0.17.7
+    restart: unless-stopped
+    gpus: all
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      OLLAMA_KEEP_ALIVE: ${PAPERLESS_OLLAMA_KEEP_ALIVE:-5m}
+    volumes:
+      - ./data/ollama:/root/.ollama
+    networks:
+      - internal
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:v0.7.2
+    restart: unless-stopped
+    depends_on:
+      - ollama
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      OLLAMA_BASE_URL: http://ollama:11434
+    volumes:
+      - ./data/open-webui:/app/backend/data
+    networks:
+      - internal
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.${APP_ID}-llm.rule=Host(`${OPEN_WEBUI_HOST}.${BASE_DOMAIN}`)
+      - traefik.http.routers.${APP_ID}-llm.entrypoints=websecure
+      - traefik.http.routers.${APP_ID}-llm.tls=true
+      - traefik.http.routers.${APP_ID}-llm.tls.certresolver=${TRAEFIK_CERTRESOLVER:-cloudflare}
+      - traefik.http.routers.${APP_ID}-llm.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+      - traefik.http.services.${APP_ID}-llm.loadbalancer.server.port=8080
+
+  paperless-ai:
+    image: clusterzx/paperless-ai:3.0.9
+    restart: unless-stopped
+    depends_on:
+      - paperless
+      - ollama
+    command:
+      - /bin/sh
+      - -lc
+      - cd /app && /patches/start-paperless-ai-with-rag-fixes.sh
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      PAPERLESS_API_URL: http://paperless:8000/api
+      PAPERLESS_API_TOKEN: ${PAPERLESS_API_TOKEN:-}
+      PROCESS_PREDEFINED_DOCUMENTS: ${PAPERLESS_AI_PROCESS_PREDEFINED_DOCUMENTS:-no}
+    volumes:
+      - ./data/paperless-ai:/app/data
+      - ./bin/start-paperless-ai-with-rag-fixes.sh:/patches/start-paperless-ai-with-rag-fixes.sh:ro
+    networks:
+      - internal
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.${APP_ID}-ai.rule=Host(`${PAPERLESS_AI_HOST}.${BASE_DOMAIN}`)
+      - traefik.http.routers.${APP_ID}-ai.entrypoints=websecure
+      - traefik.http.routers.${APP_ID}-ai.tls=true
+      - traefik.http.routers.${APP_ID}-ai.tls.certresolver=${TRAEFIK_CERTRESOLVER:-cloudflare}
+      - traefik.http.routers.${APP_ID}-ai.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+      - traefik.http.services.${APP_ID}-ai.loadbalancer.server.port=3000
+
+  paperless-gpt:
+    image: icereed/paperless-gpt:v0.25.1
+    restart: unless-stopped
+    depends_on:
+      - paperless
+      - ollama
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      PAPERLESS_BASE_URL: http://paperless:8000
+      PAPERLESS_PUBLIC_URL: https://${APP_HOST}.${BASE_DOMAIN}
+      PAPERLESS_API_TOKEN: ${PAPERLESS_API_TOKEN:-}
+      LLM_PROVIDER: ollama
+      LLM_MODEL: ${PAPERLESS_GPT_LLM_MODEL}
+      LLM_LANGUAGE: ${PAPERLESS_GPT_LLM_LANGUAGE:-English}
+      OCR_PROVIDER: llm
+      VISION_LLM_PROVIDER: ollama
+      VISION_LLM_MODEL: ${PAPERLESS_GPT_VISION_MODEL}
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_CONTEXT_LENGTH: ${PAPERLESS_GPT_OLLAMA_CONTEXT_LENGTH:-8192}
+      TOKEN_LIMIT: ${PAPERLESS_GPT_TOKEN_LIMIT:-2000}
+      MANUAL_TAG: ${PAPERLESS_GPT_MANUAL_TAG:-paperless-gpt}
+      AUTO_TAG: ${PAPERLESS_GPT_AUTO_TAG:-paperless-gpt-auto}
+      AUTO_OCR_TAG: ${PAPERLESS_GPT_AUTO_OCR_TAG:-paperless-gpt-ocr-auto}
+      PDF_OCR_TAGGING: ${PAPERLESS_GPT_PDF_OCR_TAGGING:-true}
+      PDF_OCR_COMPLETE_TAG: ${PAPERLESS_GPT_PDF_OCR_COMPLETE_TAG:-paperless-gpt-ocr-complete}
+      PDF_UPLOAD: ${PAPERLESS_GPT_PDF_UPLOAD:-false}
+      LOG_LEVEL: ${PAPERLESS_GPT_LOG_LEVEL:-DEBUG}
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        if [ -z "${PAPERLESS_API_TOKEN:-}" ]; then
+          echo "PAPERLESS_API_TOKEN is not set; paperless-gpt is waiting for bootstrap."
+          exec sleep infinity
+        fi
+        exec /app/paperless-gpt
+    volumes:
+      - ./data/paperless-gpt/prompts:/app/prompts
+    networks:
+      - internal
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.${APP_ID}-gpt.rule=Host(`${PAPERLESS_GPT_HOST}.${BASE_DOMAIN}`)
+      - traefik.http.routers.${APP_ID}-gpt.entrypoints=websecure
+      - traefik.http.routers.${APP_ID}-gpt.tls=true
+      - traefik.http.routers.${APP_ID}-gpt.tls.certresolver=${TRAEFIK_CERTRESOLVER:-cloudflare}
+      - traefik.http.routers.${APP_ID}-gpt.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+      - traefik.http.services.${APP_ID}-gpt.loadbalancer.server.port=8080
+
+networks:
+  internal:
+    driver: bridge
+  proxy:
+    external: true

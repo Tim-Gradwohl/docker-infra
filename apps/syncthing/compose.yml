@@ -11,6 +11,9 @@ services:
       - /home/tim/stacks/apps/syncthing/config:/config
       # Default shared folder root
       - /home/tim/stacks/apps/syncthing/data:/data
+      # Paperless exchange folders managed through Syncthing
+      - /home/tim/stacks/apps/paperless/data/paperless/consume:/paperless/consume
+      - /home/tim/stacks/apps/paperless/data/paperless/export:/paperless/export
     networks:
       - proxy
       - internal

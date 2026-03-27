@@ -58,7 +58,7 @@ Use this format for each entry:
 
 #### Stack: syncthing
 - **Exception type:** direct host port exposure for sync and discovery protocols
-- **Files:** `apps/syncthing/compose.yml`
+- **Files:** `apps/syncthing/compose.yml`, `apps/syncthing/README.md`
 - **Reason:** Syncthing device sync and local discovery require real L4 ports that are not handled by Traefik in this setup
 - **Risk:** host-level exposure beyond normal HTTP ingress
 - **Guardrails:** only the required sync/discovery ports are exposed; the web UI remains Traefik-routed; the Compose file documents the reason and LAN restriction intent
