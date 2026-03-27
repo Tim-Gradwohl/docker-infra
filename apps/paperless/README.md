@@ -77,7 +77,7 @@ Paperless-AI note:
 * this stack patches the upstream Paperless-AI RAG startup path at container start so the `/rag` experience works correctly with the stack's normal Authentik-protected route
 * when `./data/paperless-ai/system_state.json` already shows a healthy index, this stack reuses that persisted RAG state on container restart instead of forcing a fresh blocking `--initialize` path
 * the startup patch also fixes the upstream RAG page so an unloaded Ollama model does not throw the page into a fake offline state or block a first chat request from triggering autoload
-* for an already-bootstrapped stack that still has `PROCESS_PREDEFINED_DOCUMENTS=yes` with empty `TAGS`, run [`apps/paperless/bin/disable-paperless-ai-predefined-scan.sh`](/home/tim/stacks/apps/paperless/bin/disable-paperless-ai-predefined-scan.sh)
+* for an already-bootstrapped stack that still has `PROCESS_PREDEFINED_DOCUMENTS=yes` with empty `TAGS`, change `PROCESS_PREDEFINED_DOCUMENTS=no` in `./data/paperless-ai/.env` and restart the stack
 * only turn predefined scans back on after you have actually configured the target tags in Paperless-AI
 
 ---
@@ -154,20 +154,6 @@ Validate config:
 stack config paperless
 ```
 
-Prewarm the Paperless-GPT vision model for an OCR session:
-
-```bash
-apps/paperless/bin/prewarm-vision-model.sh
-```
-
-Disable Paperless-AI predefined scans for an already-bootstrapped stack:
-
-```bash
-apps/paperless/bin/disable-paperless-ai-predefined-scan.sh
-```
-
----
-
 ## Notes
 
 * This implementation intentionally drops the guide's raw `ports:` exposure in favor of Traefik routes.
@@ -184,5 +170,5 @@ apps/paperless/bin/disable-paperless-ai-predefined-scan.sh
 * On this host, a cold `minicpm-v:8b` load took about 95-102 seconds and could saturate Docker/WSL disk reads while loading.
 * Once warm, repeated `minicpm-v:8b` calls completed in about 1 second to reach the ready state.
 * On this host, `minicpm-v:8b` unload/teardown has also repeatedly hung after completed OCR batches, with `ollama ps` stuck at `Stopping...`, GPU VRAM pinned near 5.8 GiB, and `paperless-ollama-1` continuing to burn high CPU until the stack or Ollama service is restarted.
-* Use [`apps/paperless/bin/prewarm-vision-model.sh`](/home/tim/stacks/apps/paperless/bin/prewarm-vision-model.sh) before OCR sessions if the vision model has been idle long enough to unload.
+* Before OCR-heavy sessions, consider manually warming the vision model through Open WebUI or a direct Ollama request if `minicpm-v:8b` has been idle long enough to unload.
 * Paperless-ngx native OCR remains the safer primary path for bulk ingestion, while `paperless-gpt` OCR is best used in prewarmed sessions on this host.
