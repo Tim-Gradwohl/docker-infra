@@ -63,6 +63,7 @@ apps/qbittorrentvpn/wireguard-pia/port.dat
 # Docker / system junk
 ############################################
 
+.codex/
 *.pid
 *.sock
 *.swp
@@ -86,6 +87,7 @@ apps/qbittorrentvpn/wireguard-pia/port.dat
 
 # Per-app env files (non-secret)
 **/.env
+!apps/paperless/.env
 
 
 ############################################
