@@ -25,7 +25,8 @@ When working in this repo:
 2. For infra changes, classify the stack as public, LAN-only, or internal-only before editing.
 3. Prefer plan-first for multi-file or routing-related changes.
 4. After changes:
-   - run `bin/validate-compose-policy.sh ..` from `bin/`, or from repo root run `bin/validate-compose-policy.sh`
+   - run `stack validate <stack>` for a targeted check, or `stack validate all` for a repo-wide check
+   - use `bin/validate-compose-policy.sh` directly only when you specifically need the policy checker without the stack wrapper
    - review the diff
    - update docs if behavior or policy changed
    - update CHANGELOG.md only when the change is user- or operator-relevant

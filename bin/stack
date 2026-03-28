@@ -39,7 +39,9 @@ Usage:
   stack <cmd> <stack|all> [compose_args...]
 
 Commands:
+  cd         Print the stack directory for shell wrappers
   config     Validate/print resolved compose
+  validate   Validate compose render and repo policy
   up         Deploy (up -d by default)
   down       Stop/remove stack
   pull       Pull images
@@ -57,7 +59,10 @@ Commands:
 
 Examples:
   stack list
+  stack cd immich
   stack config gateway
+  stack validate gateway
+  stack validate all
   stack up gateway
   stack up immich --remove-orphans
   stack pull all
@@ -92,6 +97,14 @@ list_stacks() {
   for s in "${!STACKS[@]}"; do
     echo "${s}"
   done | sort
+}
+
+stack_dir_path() {
+  local s="$1"
+
+  need_files "${s}"
+
+  dirname "${STACKS[$s]}"
 }
 
 stack_status() {
@@ -622,7 +635,12 @@ run_one() {
   need_files "${s}"
 
   case "${cmd}" in
+    cd)      stack_dir_path "${s}" ;;
     config)  compose "${s}" config ;;
+    validate)
+      compose "${s}" config >/dev/null
+      "${ROOT}/bin/validate-compose-policy.sh" "${STACKS[$s]}"
+      ;;
     up)      compose "${s}" up -d "$@" ;;
     down)    compose "${s}" down "$@" ;;
     pull)    compose "${s}" pull "$@" ;;
@@ -695,6 +713,10 @@ if [[ "${cmd}" == "status" ]]; then
   exit 0
 fi
 
+if [[ "${cmd}" == "validate" && -z "${stack}" ]]; then
+  stack="all"
+fi
+
 if [[ "${cmd}" == "graph" && -z "${stack}" ]]; then
   stack="all"
 fi
@@ -737,6 +759,17 @@ if [[ "${stack}" == "all" ]]; then
         wait "$pid"
       done
     else
+      if [[ "${cmd}" == "validate" ]]; then
+        while IFS= read -r s; do
+          [[ -z "${s}" ]] && continue
+          echo "==> validate ${s}"
+          compose "${s}" config >/dev/null
+        done < <(sorted_stacks_for_all)
+
+        "${ROOT}/bin/validate-compose-policy.sh" "${ROOT}"
+        exit 0
+      fi
+
       while IFS= read -r s; do
         [[ -z "${s}" ]] && continue
         echo "==> ${cmd} ${s}"

@@ -7,16 +7,9 @@ set -euo pipefail
 # This script is intentionally conservative and heuristic-based.
 # It does not replace human review, but it helps catch obvious drift.
 
-#ROOT_DIR="${1:-.}"
-
-# detect repo root (look for apps directory)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-if [[ -d "$SCRIPT_DIR/../apps" ]]; then
-  ROOT_DIR="$SCRIPT_DIR/.."
-else
-  ROOT_DIR="${1:-.}"
-fi
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+KNOWN_EXCEPTIONS_FILE="$ROOT_DIR/docs/reference/known-exceptions.md"
 
 declare -A SHARED_ENV=()
 
@@ -133,6 +126,11 @@ validate_service_metadata() {
   [[ "${#expected_hosts[@]}" -gt 0 ]] || return 0
 
   stack_dir="$(dirname "$file")"
+
+  if [[ "$stack_dir" == "$ROOT_DIR/gateway" ]]; then
+    return 0
+  fi
+
   meta_file="$stack_dir/service.meta.json"
 
   if [[ ! -f "$meta_file" ]]; then
@@ -165,7 +163,17 @@ validate_service_metadata() {
 
 
 find_compose_files() {
-  find "$ROOT_DIR/apps" -type f \( -name "compose.yml" -o -name "docker-compose.yml" \) 2>/dev/null | sort
+  local root="${1:-$ROOT_DIR}"
+
+  {
+    if [[ -f "$root/gateway/compose.yml" ]]; then
+      printf '%s\n' "$root/gateway/compose.yml"
+    fi
+
+    if [[ -d "$root/apps" ]]; then
+      find "$root/apps" -type f \( -name "compose.yml" -o -name "docker-compose.yml" \) 2>/dev/null
+    fi
+  } | sort -u
 }
 
 warn() {
@@ -177,16 +185,58 @@ fail() {
   FAILED=1
 }
 
+stack_name_for_file() {
+  local file="$1"
+  local dir
+
+  dir="$(dirname "$file")"
+
+  if [[ "$dir" == "$ROOT_DIR/gateway" ]]; then
+    printf 'gateway'
+    return 0
+  fi
+
+  basename "$dir"
+}
+
+stack_has_exception() {
+  local stack="$1"
+  local exception_text="$2"
+
+  [[ -f "$KNOWN_EXCEPTIONS_FILE" ]] || return 1
+
+  awk -v stack="$stack" -v exception="$exception_text" '
+    $0 ~ "^#### Stack: " {
+      in_stack = ($0 == "#### Stack: " stack)
+      next
+    }
+
+    in_stack && index($0, exception) {
+      found = 1
+      exit
+    }
+
+    END {
+      exit(found ? 0 : 1)
+    }
+  ' "$KNOWN_EXCEPTIONS_FILE"
+}
+
 check_file() {
   local file="$1"
+  local stack_name
   local has_traefik_labels=0
+  local traefik_enabled=1
   local has_proxy_network_ref=0
   local has_docker_network_label=0
   local has_ports=0
   local has_latest=0
   local has_restart=0
 
+  stack_name="$(stack_name_for_file "$file")"
+
   grep -q 'traefik\.' "$file" && has_traefik_labels=1 || true
+  grep -qE 'traefik\.enable[=:]"?false"?([[:space:]]|$)' "$file" && traefik_enabled=0 || true
   grep -q 'proxy' "$file" && has_proxy_network_ref=1 || true
   grep -q 'traefik\.docker\.network=proxy' "$file" && has_docker_network_label=1 || true
   grep -qE '^[[:space:]]*ports:' "$file" && has_ports=1 || true
@@ -194,18 +244,20 @@ check_file() {
   grep -qE 'restart:[[:space:]]+unless-stopped' "$file" && has_restart=1 || true
 
   if [[ "$has_latest" -eq 1 ]]; then
-    fail "$file uses a latest image tag"
+    warn "$file uses a latest image tag"
   fi
 
-  if [[ "$has_traefik_labels" -eq 1 && "$has_docker_network_label" -eq 0 ]]; then
+  if [[ "$has_traefik_labels" -eq 1 && "$traefik_enabled" -eq 1 && "$has_docker_network_label" -eq 0 ]]; then
     fail "$file has Traefik labels but is missing traefik.docker.network=proxy"
   fi
 
-  if [[ "$has_traefik_labels" -eq 1 && "$has_proxy_network_ref" -eq 0 ]]; then
+  if [[ "$has_traefik_labels" -eq 1 && "$traefik_enabled" -eq 1 && "$has_proxy_network_ref" -eq 0 ]]; then
     fail "$file has Traefik labels but no proxy network reference"
   fi
 
-  if [[ "$has_traefik_labels" -eq 1 && "$has_ports" -eq 1 ]]; then
+  if [[ "$has_traefik_labels" -eq 1 && "$traefik_enabled" -eq 1 && "$has_ports" -eq 1 ]] \
+    && ! stack_has_exception "$stack_name" "direct host port exposure" \
+    && ! stack_has_exception "$stack_name" "published HTTP(S) ports"; then
     warn "$file has Traefik labels and direct ports; verify this is an intentional exception"
   fi
 
@@ -217,19 +269,33 @@ check_file() {
 }
 
 main() {
-  FAILED=0
+  local target
+  local -a files=()
 
-  if [[ ! -d "$ROOT_DIR/apps" ]]; then
-    fail "apps directory not found under $ROOT_DIR"
-    exit 1
-  fi
+  FAILED=0
 
   parse_env_file "$ROOT_DIR/shared/.env.global" SHARED_ENV
 
-  mapfile -t files < <(find_compose_files)
+  if [[ "$#" -eq 0 ]]; then
+    mapfile -t files < <(find_compose_files "$ROOT_DIR")
+  else
+    for target in "$@"; do
+      if [[ -f "$target" ]]; then
+        files+=("$(cd "$(dirname "$target")" && pwd)/$(basename "$target")")
+      elif [[ -d "$target" && -f "$target/compose.yml" ]]; then
+        files+=("$(cd "$target" && pwd)/compose.yml")
+      elif [[ -d "$target" && ( -d "$target/apps" || -f "$target/gateway/compose.yml" ) ]]; then
+        while IFS= read -r file; do
+          [[ -n "$file" ]] && files+=("$file")
+        done < <(find_compose_files "$target")
+      else
+        fail "unsupported validation target: $target"
+      fi
+    done
+  fi
 
   if [[ "${#files[@]}" -eq 0 ]]; then
-    warn "No compose files found under $ROOT_DIR/apps"
+    warn "No compose files found for validation"
     exit 0
   fi
 

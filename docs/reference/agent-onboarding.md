@@ -120,8 +120,16 @@ For normal operations, prefer `stack` / `stk` over raw `docker compose`.
 After changes, run:
 
 ```bash
-bin/validate-compose-policy.sh
+stack validate <stack>
 ```
+
+For a full repo-wide check, run:
+
+```bash
+stack validate all
+```
+
+Use `bin/validate-compose-policy.sh` directly only when you want the policy checker without the wrapper's compose render validation.
 
 Then review the diff and update docs only where behavior or policy changed.
 

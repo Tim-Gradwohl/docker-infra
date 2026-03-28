@@ -8,7 +8,7 @@ _stack_completion() {
   cmd="${COMP_WORDS[1]}"
   subcmd="${COMP_WORDS[2]}"
 
-  commands="list status config doctor graph up down pull restart logs ps update backup recover"
+  commands="list status cd config validate doctor graph up down pull restart logs ps update backup recover"
   prune_flags="--keep --days --dry-run --yes"
 
   # Complete first argument: command
@@ -39,7 +39,7 @@ _stack_completion() {
 
   # Commands that accept stack names
   case "$cmd" in
-    config|doctor|graph|up|down|pull|restart|logs|ps|update|recover)
+    cd|config|validate|doctor|graph|up|down|pull|restart|logs|ps|update|recover)
       COMPREPLY=( $(compgen -W "$stacks" -- "$cur") )
       return 0
       ;;

@@ -13,6 +13,20 @@
 - Do not rewrite historical entries unless fixing a factual error.
 - Do not include full procedures, incident reports, or trivial formatting changes.
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
+
+## 3.9.74 Stack CLI Validation And Navigation
+
+### Added
+- `stack validate <stack|all>` adds an operator-facing validation command that runs compose render checks through the wrapper and then applies repo policy validation
+- `stack cd <stack>` adds stack-directory navigation through the sourced shell wrapper while keeping `bin/stack` as the executable backend
+
+### Changed
+- `bin/validate-compose-policy.sh` now supports targeted paths, includes `gateway`, treats `:latest` as a warning, and suppresses direct-port warnings for documented exceptions
+- docs now describe `stack validate` as the primary post-change validation path and document the `stack` shell-function layer needed for `stack cd`
+
+### Removed
+- removes the legacy `stackcd` and `stackbackup` shell helpers in favor of `stack cd ...` and `stack backup ...`
+
 ## 3.9.73 Restore Paperless Stack
 
 ### Added

@@ -95,9 +95,8 @@ Two types of tools exist.
 
 | Tool | Type | Purpose |
 |-----|-----|-----|
-| `stack` | executable script | Docker stack orchestration |
+| `stack` | shell function + executable backend | primary CLI; supports `stack cd <stack>` when `stack-tools.sh` is sourced |
 | `stk` | shell function | Shortcut to run `stack` |
-| `stackbackup` | shell function | Legacy backup helper |
 
 Primary CLI tool:
 
@@ -135,16 +134,16 @@ Run:
 
 ```bash
 which stack
+type stack
 type stk
-type stackbackup
 ```
 
 Expected output:
 
 ```
 /home/tim/stacks/bin/stack
+stack is a function
 stk is a function
-stackbackup is a function
 ```
 
 ---
@@ -163,7 +162,9 @@ Supported commands:
 |------|------|
 | `list` | show detected stacks |
 | `status` | show runtime stack status |
+| `cd` | change into a stack directory when using the sourced shell wrapper |
 | `config` | validate compose configuration |
+| `validate` | run compose render validation and repo policy checks |
 | `doctor` | run diagnostics |
 | `graph` | show stack → service tree |
 | `up` | deploy stack |
@@ -181,8 +182,11 @@ Supported commands:
 
 ```bash
 stack list
+stack cd immich
 stack status
 stack config gateway
+stack validate gateway
+stack validate all
 stack doctor immich
 stack doctor all
 stack up gateway
@@ -212,6 +216,7 @@ stack update all
 stack backup all
 stack doctor all
 stack graph all
+stack validate all
 ```
 
 Behavior:
@@ -222,6 +227,7 @@ Behavior:
 | `up all` | ordered startup |
 | `update all` | pull → recreate → prune |
 | `backup all` | creates backups for every stack |
+| `validate all` | renders compose for all stacks, then runs repo policy checks |
 
 Startup order priority:
 
@@ -231,6 +237,30 @@ cloudflared
 authentik
 others (alphabetical)
 ```
+
+---
+
+## Stack Directory Navigation
+
+Change into a stack directory:
+
+```bash
+stack cd immich
+stack cd gateway
+```
+
+Behavior:
+
+- `stack cd <app>` changes your current shell directory only when `stack-tools.sh` has been sourced
+- application stacks resolve to `~/stacks/apps/<app>`
+- `stack cd gateway` resolves to `~/stacks/gateway`
+- the executable backend prints the target path; the shell wrapper performs the actual `cd`
+
+Debugging note:
+
+- `stack` has two layers: a shell function from `stack-tools.sh` and the executable backend at `~/stacks/bin/stack`
+- `which stack` shows the backend path, but `type stack` shows what your shell will actually execute
+- if `stack cd` does not change directories, first check whether `stack-tools.sh` has been sourced and confirm `type stack` reports `stack is a function`
 
 ---
 
@@ -290,6 +320,23 @@ Doctor checks:
 - running containers
 - container health
 - service status
+
+---
+
+## Stack Validation
+
+Run compose render validation plus repo policy checks.
+
+```bash
+stack validate immich
+stack validate all
+```
+
+Behavior:
+
+- `stack validate <stack>` runs `docker compose config` through the `stack` wrapper for that stack, then policy-checks the target compose file
+- `stack validate all` runs compose render validation for every stack, then runs `bin/validate-compose-policy.sh` across the repo
+- `bin/validate-compose-policy.sh` can still be run directly when you want only the policy checker
 
 ---
 
@@ -429,27 +476,6 @@ Compression format:
 
 ```
 zstd (.tar.zst)
-```
-
----
-
-### Legacy helper
-
-```
-stackbackup
-```
-
-Usage:
-
-```bash
-cd ~/stacks/apps/yt2midi_v3
-stackbackup
-```
-
-Works only inside:
-
-```
-~/stacks/apps/<stack>
 ```
 
 ---
@@ -1773,39 +1799,21 @@ fi
 ```
 # ~/stacks/bin/stack-tools.sh
 
-stackbackup() {
-    local stack backupdir outfile
+stack() {
+    local target
 
-    # ensure we are exactly inside ~/stacks/apps/<stack>
-    if [[ "$(dirname "$PWD")" != "$HOME/stacks/apps" ]]; then
-        echo "❌ stackbackup must be run inside ~/stacks/apps/<stack-folder>"
-        return 1
+    if [[ "${1:-}" == "cd" ]]; then
+        target="$("$HOME/stacks/bin/stack" "$@")" || return $?
+        builtin cd -- "$target"
+        return $?
     fi
 
-    stack="$(basename "$PWD")"
-    backupdir="$HOME/stacks/backups/apps/$stack"
-
-    mkdir -p "$backupdir"
-
-    outfile="$backupdir/${stack}_$(date +%F_%H%M).tar.zst"
-
-    echo "📦 Creating backup:"
-    echo "   stack : $stack"
-    echo "   file  : $outfile"
-
-    tar -I zstd -cvf "$outfile" -C .. "$stack"
-
-    echo "✅ Backup completed"
+    "$HOME/stacks/bin/stack" "$@"
 }
 
 #stack: command but shorter: stk up immich
 stk() {
-    "$HOME/stacks/bin/stack" "$@"
-}
-
-#stack: stackcd immich
-stackcd() {
-    cd "$HOME/stacks/apps/$1"
+    stack "$@"
 }
 ```
 
@@ -1868,4 +1876,3 @@ _stack_completion() {
 complete -F _stack_completion stack
 complete -F _stack_completion stk
 ```
-
