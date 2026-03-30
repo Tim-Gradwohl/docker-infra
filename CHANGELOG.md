@@ -14,6 +14,20 @@
 - Do not include full procedures, incident reports, or trivial formatting changes.
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
 
+## 3.9.75 Add Jellyfin Stack
+
+### Added
+- `apps/jellyfin/` adds a repo-native Jellyfin stack with Traefik routing, stack-local state directories, and shared auth middleware
+
+### Changed
+- `apps/jellyfin/compose.yml` now mounts the Windows media libraries from `/mnt/d/Torrent/Movies`, `/mnt/d/Torrent/Anime`, and `/mnt/d/Torrent/Shows`
+
+### Fixed
+- `apps/jellyfin/compose.yml` no longer forces UID/GID `1000:1000`, which was preventing Jellyfin from creating `/config/log` on the existing bind-mounted config path
+
+### Notes
+- the Jellyfin stack follows the official container guidance for `/config`, `/cache`, and media mounts while adapting web access to the repo's Traefik-first model
+
 ## 3.9.74 Stack CLI Validation And Navigation
 
 ### Added

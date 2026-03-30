@@ -1,0 +1,37 @@
+name: ${APP_ID}
+
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:10.11
+    container_name: ${APP_ID}
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+    environment:
+      - TZ=${TZ:-Europe/Berlin}
+      - JELLYFIN_PublishedServerUrl=https://${APP_HOST}.${BASE_DOMAIN}
+
+    volumes:
+      - ./data/config:/config
+      - ./data/cache:/cache
+      - /mnt/d/Torrent/Movies:/movies:ro
+      - /mnt/d/Torrent/Anime:/anime:ro
+      - /mnt/d/Torrent/Shows:/shows:ro
+
+    networks:
+      - proxy
+
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.${APP_ID}.rule=Host(`${APP_HOST}.${BASE_DOMAIN}`)
+      - traefik.http.routers.${APP_ID}.entrypoints=websecure
+      - traefik.http.routers.${APP_ID}.tls=true
+      - traefik.http.routers.${APP_ID}.tls.certresolver=${TRAEFIK_CERTRESOLVER:-cloudflare}
+      - traefik.http.routers.${APP_ID}.middlewares=${TRAEFIK_AUTH_MIDDLEWARE}
+      - traefik.http.services.${APP_ID}.loadbalancer.server.port=8096
+
+networks:
+  proxy:
+    external: true

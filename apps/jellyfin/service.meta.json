@@ -1,0 +1,13 @@
+{
+  "jellyfin.timopoly.com": {
+    "name": "Jellyfin",
+    "description": "Media server",
+    "category": "Media",
+    "icon": "film",
+    "order": 41,
+    "tags": [
+      "streaming",
+      "media"
+    ]
+  }
+}
