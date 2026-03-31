@@ -30,8 +30,8 @@ services:
     environment:
       - "TZ=${TZ:-Europe/Berlin}"
     volumes:
-      - "./data/in:/data/in:rw"
-      - "./data/out:/data/out:rw"
+      - "/mnt/d/Docker/yt2midi_v3/data/in:/data/in:rw"
+      - "/mnt/d/Docker/yt2midi_v3/data/out:/data/out:rw"
     networks:
       - internal
       - proxy

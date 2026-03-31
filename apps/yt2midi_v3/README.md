@@ -122,8 +122,8 @@ ${TRAEFIK_CERTRESOLVER:-cloudflare}
 Bind mounts:
 
 ```text id="h7x0yq"
-./data/in
-./data/out
+/mnt/d/Docker/yt2midi_v3/data/in
+/mnt/d/Docker/yt2midi_v3/data/out
 ```
 
 Mapped to:
@@ -252,7 +252,7 @@ docker compose up --build
 
 Open: http://localhost:8080
 
-Output files land in `./data/out/<job-id>/`.
+Output files land in `/mnt/d/Docker/yt2midi_v3/data/out/<job-id>/`.
 
 ## Notes
 
