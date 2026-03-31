@@ -526,7 +526,7 @@ stack recover <stack>
 Example:
 
 ```
-stack recover iptvnator
+stack recover metube
 ```
 
 The command restores the most recent backup while preserving the previous state in:
@@ -676,7 +676,7 @@ stack recover <stack>
 Example:
 
 ```
-stack recover iptvnator
+stack recover metube
 ```
 
 The tool automatically locates the **latest backup archive**.
@@ -690,8 +690,8 @@ Backups are searched in:
 Example backup location:
 
 ```
-~/stacks/backups/apps/iptvnator/
-└── iptvnator_2026-03-11_1848.tar.zst
+~/stacks/backups/apps/metube/
+└── metube_2026-03-11_1848.tar.zst
 ```
 
 ---
@@ -703,7 +703,7 @@ A common workflow is restoring a stack after a failed update or configuration ch
 Example scenario:
 
 ```
-stack update iptvnator
+stack update metube
 ```
 
 After the update the stack fails to start or behaves incorrectly.
@@ -711,7 +711,7 @@ After the update the stack fails to start or behaves incorrectly.
 You can restore the last known working state with:
 
 ```
-stack recover iptvnator
+stack recover metube
 ```
 
 The command restores the stack directory from the latest backup while preserving the previous state in:
@@ -759,7 +759,7 @@ Example rollback directory:
 
 ```
 ~/stacks/recovered_apps/
-└── iptvnator.pre_recover_2026-03-11T18-53-49
+└── metube.pre_recover_2026-03-11T18-53-49
 ```
 
 This directory contains the full previous stack state and can be manually restored if needed.
@@ -775,10 +775,10 @@ Because recovery replaces the current stack directory, confirmation is required.
 Example prompt:
 
 ```
-Recovery will replace the current stack directory for 'iptvnator'
-Backup: ~/stacks/backups/apps/iptvnator/iptvnator_2026-03-11_1848.tar.zst
+Recovery will replace the current stack directory for 'metube'
+Backup: ~/stacks/backups/apps/metube/metube_2026-03-11_1848.tar.zst
 Current directory will be moved to:
-~/stacks/recovered_apps/iptvnator.pre_recover_2026-03-11T18-53-49
+~/stacks/recovered_apps/metube.pre_recover_2026-03-11T18-53-49
 Continue? [y/N]:
 ```
 
@@ -797,31 +797,31 @@ the recovery operation is cancelled.
 Example command:
 
 ```
-stack recover iptvnator
+stack recover metube
 ```
 
 Example output:
 
 ```
-==> recover iptvnator
-Using backup: ~/stacks/backups/apps/iptvnator/iptvnator_2026-03-11_1848.tar.zst
+==> recover metube
+Using backup: ~/stacks/backups/apps/metube/metube_2026-03-11_1848.tar.zst
 Archive check passed
 
-Recovery will replace the current stack directory for 'iptvnator'
-Backup: ~/stacks/backups/apps/iptvnator/iptvnator_2026-03-11_1848.tar.zst
+Recovery will replace the current stack directory for 'metube'
+Backup: ~/stacks/backups/apps/metube/metube_2026-03-11_1848.tar.zst
 Current directory will be moved to:
-~/stacks/recovered_apps/iptvnator.pre_recover_2026-03-11T18-53-49
+~/stacks/recovered_apps/metube.pre_recover_2026-03-11T18-53-49
 Continue? [y/N]: y
 
-Stopping stack 'iptvnator'
+Stopping stack 'metube'
 Moving current stack to recovered_apps
 Extracting backup
 Validating compose config
-Starting stack 'iptvnator'
+Starting stack 'metube'
 
-Recovery completed for 'iptvnator'
-Backup restored from: ~/stacks/backups/apps/iptvnator/iptvnator_2026-03-11_1848.tar.zst
-Previous stack preserved at: ~/stacks/recovered_apps/iptvnator.pre_recover_2026-03-11T18-53-49
+Recovery completed for 'metube'
+Backup restored from: ~/stacks/backups/apps/metube/metube_2026-03-11_1848.tar.zst
+Previous stack preserved at: ~/stacks/recovered_apps/metube.pre_recover_2026-03-11T18-53-49
 ```
 
 ---
@@ -890,7 +890,7 @@ stack backup prune <stack>
 Example:
 
 ```
-stack backup prune iptvnator
+stack backup prune metube
 ```
 
 Default behavior:
@@ -917,7 +917,7 @@ stack backup prune all
 ### Keep newest N backups
 
 ```
-stack backup prune iptvnator --keep 5
+stack backup prune metube --keep 5
 ```
 
 Behavior:
@@ -932,7 +932,7 @@ delete older backups
 ### Delete backups older than N days
 
 ```
-stack backup prune iptvnator --days 30
+stack backup prune metube --days 30
 ```
 
 Behavior:
@@ -950,7 +950,7 @@ delete backups older than 30 days
 Preview which backups would be removed without deleting them.
 
 ```
-stack backup prune iptvnator --dry-run
+stack backup prune metube --dry-run
 ```
 
 ---
@@ -960,7 +960,7 @@ stack backup prune iptvnator --dry-run
 Run pruning without interactive confirmation.
 
 ```
-stack backup prune iptvnator --yes
+stack backup prune metube --yes
 ```
 
 ---
@@ -970,22 +970,22 @@ stack backup prune iptvnator --yes
 Example command:
 
 ```
-stack backup prune iptvnator --keep 3
+stack backup prune metube --keep 3
 ```
 
 Example output:
 
 ```
-==> backup prune iptvnator
+==> backup prune metube
 Policy: keep newest 3 backup(s)
 
 Backups to delete:
-  /home/tim/stacks/backups/apps/iptvnator/iptvnator_2026-03-10_1901.tar.zst
-  /home/tim/stacks/backups/apps/iptvnator/iptvnator_2026-03-10_2103.tar.zst
+  /home/tim/stacks/backups/apps/metube/metube_2026-03-10_1901.tar.zst
+  /home/tim/stacks/backups/apps/metube/metube_2026-03-10_2103.tar.zst
 
 Delete these 2 backup(s)? [y/N]: y
 
-Pruned 2 backup(s) for iptvnator
+Pruned 2 backup(s) for metube
 ```
 
 ---

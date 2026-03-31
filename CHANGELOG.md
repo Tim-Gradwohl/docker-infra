@@ -14,6 +14,15 @@
 - Do not include full procedures, incident reports, or trivial formatting changes.
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
 
+## 3.9.78 Remove IPTVnator Stack
+
+### Changed
+- `stack` no longer registers `iptvnator` as a managed stack or includes it in the `all` operation order
+- `docs/tooling/stack-cli.md` replaces `iptvnator` examples with `metube` so operator docs only reference existing stacks
+
+### Removed
+- `apps/iptvnator/` and its checked-in stack definition from the repo
+
 ## 3.9.77 Nextcloud Direct Auth Routing
 
 ### Changed

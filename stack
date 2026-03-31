@@ -12,7 +12,6 @@ STACKS[adguardhome]="${ROOT}/apps/adguardhome/compose.yml"
 STACKS[gitea]="${ROOT}/apps/gitea/compose.yml"
 STACKS[immich]="${ROOT}/apps/immich/compose.yml"
 STACKS[metube]="${ROOT}/apps/metube/compose.yml"
-STACKS[iptvnator]="${ROOT}/apps/iptvnator/compose.yml"
 STACKS[ytptube]="${ROOT}/apps/ytptube/compose.yml"
 STACKS[qbittorrentvpn]="${ROOT}/apps/qbittorrentvpn/compose.yml"
 STACKS[obsidian]="${ROOT}/apps/obsidian/compose.yml"
@@ -139,7 +138,7 @@ run_one() {
 
 if [[ "${stack}" == "all" ]]; then
   # Reasonable order: gateway first (routing), then services
-  order=(gateway gitea adguardhome immich metube iptvnator ytptube qbittorrentvpn)
+  order=(gateway gitea adguardhome immich metube ytptube qbittorrentvpn)
 
   # Forward only extra args AFTER "<cmd> all"
   extra_args=("${@:3}")
@@ -168,4 +167,3 @@ else
   need_files "${stack}"
   run_one "${stack}" "${@:3}"
 fi
-
