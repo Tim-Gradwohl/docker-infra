@@ -1,0 +1,14 @@
+{
+  "nextcloud.timopoly.com": {
+    "name": "Nextcloud",
+    "description": "Files, sync, and collaboration",
+    "category": "Storage",
+    "icon": "cloud",
+    "order": 25,
+    "tags": [
+      "files",
+      "sync",
+      "collaboration"
+    ]
+  }
+}

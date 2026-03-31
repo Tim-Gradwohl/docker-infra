@@ -14,6 +14,30 @@
 - Do not include full procedures, incident reports, or trivial formatting changes.
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
 
+## 3.9.77 Nextcloud Direct Auth Routing
+
+### Changed
+- `apps/nextcloud/compose.yml` keeps `nextcloud.timopoly.com` off the shared Traefik Authentik middleware so native Nextcloud clients and WebDAV can authenticate directly against Nextcloud
+- `apps/nextcloud/README.md` now documents the direct-auth routing model and the reason the shared middleware is intentionally absent
+- `docs/reference/known-exceptions.md` now records `nextcloud` as a public-route-without-shared-auth exception
+
+### Notes
+- `nextcloud` still remains HTTPS-only behind Traefik; this change only removes the proxy-layer Authentik gate for that route
+- the bootstrap admin env vars in `shared/.env.secrets` are first-install values only and do not rotate an already-created Nextcloud admin password
+
+## 3.9.76 Add Nextcloud Stack
+
+### Added
+- `apps/nextcloud/` adds a repo-native public Nextcloud stack with Traefik routing, internal MariaDB and Redis services, and service-catalog metadata
+
+### Changed
+- `bin/stack` now treats `nextcloud` as a managed secret-backed stack so shared secrets are loaded automatically
+- `docs/tooling/stack-cli.md` now documents `nextcloud` in the secret-backed stack list
+
+### Notes
+- the stack follows the official `nextcloud/docker` Apache deployment model while adapting it to the repo's Traefik-first public-app contract
+- required credentials are expected in `shared/.env.secrets` as `NEXTCLOUD_DB_PASSWORD`, `NEXTCLOUD_DB_ROOT_PASSWORD`, `NEXTCLOUD_ADMIN_USER`, and `NEXTCLOUD_ADMIN_PASSWORD`
+
 ## 3.9.75 Add Jellyfin Stack
 
 ### Added

@@ -77,6 +77,13 @@ Use this format for each entry:
 - **Risk:** auth bootstrap and callback flow can break if middleware is applied incorrectly
 - **Guardrails:** the main Authentik route has no shared auth middleware; the outpost path has its own explicit router; the stack README documents this behavior
 
+#### Stack: nextcloud
+- **Exception type:** public route without shared auth middleware
+- **Files:** `apps/nextcloud/compose.yml`, `apps/nextcloud/README.md`
+- **Reason:** native Nextcloud clients and WebDAV need to authenticate against Nextcloud itself; Traefik ForwardAuth in front of the whole route breaks app-compatible login flows
+- **Risk:** the public route is no longer protected by the repo-wide Authentik middleware chain at the proxy layer
+- **Guardrails:** the route remains HTTPS-only behind Traefik; Nextcloud still requires its own application authentication; the stack README documents why the middleware is intentionally absent
+
 #### Stack: gateway
 - **Exception type:** intentional published HTTP(S) ports and Docker socket access
 - **Files:** `gateway/compose.yml`, `gateway/README.md`
