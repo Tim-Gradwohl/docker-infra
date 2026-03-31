@@ -1,0 +1,14 @@
+{
+  "homeassistant.timopoly.com": {
+    "name": "Home Assistant",
+    "description": "Home automation and dashboards",
+    "category": "Home",
+    "icon": "house",
+    "order": 26,
+    "tags": [
+      "automation",
+      "iot",
+      "dashboards"
+    ]
+  }
+}

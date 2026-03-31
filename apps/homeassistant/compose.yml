@@ -1,0 +1,29 @@
+name: ${APP_ID}
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:${HOMEASSISTANT_VERSION:-stable}
+    container_name: ${APP_ID}
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+    volumes:
+      - ./data/config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.${APP_ID}.rule=Host(`${APP_HOST}.${BASE_DOMAIN}`)
+      - traefik.http.routers.${APP_ID}.entrypoints=websecure
+      - traefik.http.routers.${APP_ID}.tls=true
+      - traefik.http.routers.${APP_ID}.tls.certresolver=${TRAEFIK_CERTRESOLVER:-cloudflare}
+      - traefik.http.services.${APP_ID}.loadbalancer.server.port=8123
+
+networks:
+  proxy:
+    external: true

@@ -84,6 +84,13 @@ Use this format for each entry:
 - **Risk:** the public route is no longer protected by the repo-wide Authentik middleware chain at the proxy layer
 - **Guardrails:** the route remains HTTPS-only behind Traefik; Nextcloud still requires its own application authentication; the stack README documents why the middleware is intentionally absent
 
+#### Stack: homeassistant
+- **Exception type:** public route without shared auth middleware
+- **Files:** `apps/homeassistant/compose.yml`, `apps/homeassistant/README.md`
+- **Reason:** Home Assistant companion apps, webhooks, and the WebSocket API need to authenticate directly against Home Assistant; Traefik ForwardAuth in front of the whole route would interfere with those client flows
+- **Risk:** the public route is no longer protected by the repo-wide Authentik middleware chain at the proxy layer
+- **Guardrails:** the route remains HTTPS-only behind Traefik; Home Assistant still requires its own application authentication; the stack README documents the required reverse-proxy `trusted_proxies` configuration
+
 #### Stack: gateway
 - **Exception type:** intentional published HTTP(S) ports and Docker socket access
 - **Files:** `gateway/compose.yml`, `gateway/README.md`

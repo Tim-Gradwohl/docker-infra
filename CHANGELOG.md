@@ -14,6 +14,19 @@
 - Do not include full procedures, incident reports, or trivial formatting changes.
 - Use only the sections that apply: `Added`, `Changed`, `Fixed`, `Removed`, `Notes`.
 
+## 3.9.79 Add Home Assistant Stack
+
+### Added
+- `apps/homeassistant/` adds a repo-native public Home Assistant stack with Traefik routing, stack-local state storage, and service-catalog metadata
+
+### Changed
+- `docs/reference/known-exceptions.md` now records `homeassistant` as a public-route-without-shared-auth exception
+- `apps/homeassistant/README.md` now documents the required reverse-proxy `configuration.yaml` block and the expected first-boot `400: Bad Request` symptom when that block is missing
+
+### Notes
+- the stack follows the official Home Assistant Container compose guidance for `/config`, `/etc/localtime`, `/run/dbus`, and `TZ` while adapting web access to the repo's Traefik-first public-app contract
+- unlike the upstream example, the checked-in stack does not enable `network_mode: host` or `privileged: true` by default
+
 ## 3.9.78 Remove IPTVnator Stack
 
 ### Changed
