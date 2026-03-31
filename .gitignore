@@ -16,6 +16,7 @@ shared/.env.secrets
 state/
 backups/
 recovered_apps/
+shared/service-catalog/services.json
 
 # Traefik ACME certificates (runtime, contains private keys)
 gateway/acme/
